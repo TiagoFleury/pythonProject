@@ -244,8 +244,8 @@ class TestBoard(unittest.TestCase):
         # et ensuite seulement si on tombe sur la barricade je tire le placement de la barricade.
         # Ca peut être vraiment bien je pense que je vais faire ça de ce pas en fait.
 
-
-    def test_playout(self):
+    @skip
+    def test_playout_mm(self):
         """Affiche la moyenne mobile des durées des playouts.
             On aimerait qu'elle descende au fur et à mesure que les parties sont mémorisées."""
 
@@ -287,7 +287,7 @@ class TestBoard(unittest.TestCase):
             pickle.dump(b.transposition_table, f)
 
 
-
+    @skip
     def test_plot_mm(self):
         with open("game_times.pkl", "rb") as f:
             game_times = pickle.load(f)

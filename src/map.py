@@ -40,9 +40,17 @@ class Map:
 
             self.possible_start_nodes = ['a0', 'e0', 'i0', 'a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1', 'i1', 'b2',
                                          'd2', 'f2', 'h2', 'b3', 'c3', 'd3', 'e3', 'f3', 'g3', 'h3', 'c4', 'e4', 'g4',
-                                         'c5', 'd5', 'e5', 'f5', 'g5']
-            self.possible_end_nodes = ['e1']
-            self.possible_block_placements = ['b2']
+                                         'c5', 'd5', 'e5', 'f5', 'g5', 'b6', 'c6', 'd6', 'e6', 'f6', 'g6', 'h6', 'b7',
+                                         'h7', 'b8', 'c8', 'd8', 'e8', 'f8', 'g8', 'h8']
+
+            self.possible_end_nodes = ['a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1', 'i1', 'b2',
+                                       'd2', 'f2', 'h2', 'b3', 'c3', 'd3', 'e3', 'f3', 'g3', 'h3', 'c4', 'e4', 'g4',
+                                       'c5', 'd5', 'e5', 'f5', 'g5', 'b6', 'c6', 'd6', 'e6', 'f6', 'g6', 'h6', 'b7',
+                                       'h7', 'b8', 'c8', 'd8', 'e8', 'f8', 'g8', 'h8', 'e9']
+
+            self.possible_block_placements = ['b2', 'd2', 'f2', 'h2', 'b3', 'c3', 'd3', 'e3', 'f3', 'g3', 'h3', 'c4',
+                                              'e4', 'g4', 'c5', 'd5', 'e5', 'f5', 'g5', 'b6', 'c6', 'd6', 'e6', 'f6',
+                                              'g6', 'h6', 'b7', 'h7', 'b8', 'c8', 'd8', 'e8', 'f8', 'g8', 'h8']
 
             self.content2code = {EMPTY: 0, RED: 1, BLUE: 1, GREEN: 1, GOAL: 2}
             self.player2code = {RED: 0, BLUE: 1, GREEN: 2}
@@ -53,7 +61,7 @@ class Map:
 
         # C'est le nombre total de coup possible sans prendre en compte l'etat du plateau
         self.nb_possible_moves = (self.nb_players * len(self.possible_start_nodes) * len(self.possible_end_nodes) * (
-                    self.nb_players - 1 + 2)) + (
+                self.nb_players - 1 + 2)) + (
                                          self.nb_players * len(self.possible_start_nodes) * len(
                                      self.possible_end_nodes) * len(self.possible_block_placements))
 
