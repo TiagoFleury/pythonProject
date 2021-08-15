@@ -10,7 +10,7 @@ from src.move import Move
 BLOCK = 0
 RED = 1
 BLUE = 2
-EMPTY = 3
+EMPTY = 4
 GOAL = -1
 
 MAX_DICE = 3
@@ -172,7 +172,7 @@ def UCT(board: Board, dice_score, played, c):
     else:  # Si l'etat n'a jamais été visité, on ajoute juste l'état dans la table et on retourne le résultat d'un
         # playout
         board.new_table_entry()
-        res = board.playout_with_policy(played, exploration_parameter=0.25)
+        res = board.playout_with_policy(played, exploration_parameter=0.3)
         return res
 
 

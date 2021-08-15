@@ -15,7 +15,8 @@ from typing import Union
 BLOCK = 0
 RED = 1
 BLUE = 2
-EMPTY = 3
+GREEN = 3
+EMPTY = 4
 GOAL = -1
 
 SWITCH = {RED: BLUE, BLUE: RED}
@@ -28,9 +29,13 @@ class Board:
 
     def __init__(self, hash_table=None, hash_turn=None, mapp=Map("P22-D3-S34-v1")):
 
+
         self.hashcode = 0  # On aura un hashcode unique pour chaque position de jeu possible (voir section hachage de Zobrist)
 
-        self.piece_pools = {RED: ['a0', 2], BLUE: ['i0', 2]}
+        if mapp.reference == "P22-D3-S34-v1":
+            self.piece_pools = {RED: ['a0', 2], BLUE: ['i0', 2]}
+        elif mapp.reference == "P32-D3-S48-v1":
+            self.piece_pools = {RED: ['a0', 2], BLUE: ['i0', 2], GREEN: ['e0', 2]}
 
         self.turn = RED
 
@@ -265,8 +270,10 @@ class Board:
 
         if infos is True:
             plt.title(f'Turn: {INT2STRING[self.turn]} - Hashcode: {self.hashcode}')
-            plt.text(-1, 8, 'RED POOL: ' + str(self.piece_pools[RED][1]), color='red')
-            plt.text(7, 8, 'BLUE POOL: ' + str(self.piece_pools[BLUE][1]), color='blue')
+            plt.text(-1, -1, 'RED POOL: ' + str(self.piece_pools[RED][1]), color='red')
+            plt.text(7, -1, 'BLUE POOL: ' + str(self.piece_pools[BLUE][1]), color='blue')
+            if self.map.reference == "P32-D3-S48-v1":
+                plt.text(3, -1, 'GREEN POOL: ' + str(self.piece_pools[GREEN][1]), color='green')
 
         plt.text(-1, 10, 't=' + str(self.game_time))
 
@@ -281,6 +288,8 @@ class Board:
                 node_colors.append('red')
             elif content == BLUE:
                 node_colors.append('blue')
+            elif content == GREEN:
+                node_colors.append('green')
             elif content == BLOCK:
                 node_colors.append('black')
             elif content == GOAL:

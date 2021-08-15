@@ -4,7 +4,8 @@ from typing import List, Union, Tuple, Any
 BLOCK = 0
 RED = 1
 BLUE = 2
-EMPTY = 3
+GREEN = 3
+EMPTY = 4
 GOAL = -1
 
 SWITCH = {RED: BLUE, BLUE: RED}

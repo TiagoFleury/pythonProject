@@ -19,7 +19,7 @@ def plot_fig(fig):
     plt.show()
 
 
-def figs2gif(figs, name='UCT_10000_c0.5_gt26.gif', time_by_frame=0.5):
+def figs2gif(figs, name='out.gif', time_by_frame=0.5):
     imgs = []
     for fig in figs:
         imgs.append(fig2img(fig))

@@ -17,7 +17,8 @@ from src.utils import plot_fig
 BLOCK = 0
 RED = 1
 BLUE = 2
-EMPTY = 3
+GREEN = 3
+EMPTY = 4
 GOAL = -1
 
 
@@ -206,9 +207,6 @@ class TestBoard(unittest.TestCase):
             self.assertEqual(str(moves[i]), str(moves_bis[i]))
 
 
-
-        return None
-
     def test_playout_policy(self):
 
 
@@ -246,38 +244,41 @@ class TestBoard(unittest.TestCase):
         # et ensuite seulement si on tombe sur la barricade je tire le placement de la barricade.
         # Ca peut être vraiment bien je pense que je vais faire ça de ce pas en fait.
 
-    @skip
-    def test_playout_mm(self):
+
+    def test_playout(self):
         """Affiche la moyenne mobile des durées des playouts.
             On aimerait qu'elle descende au fur et à mesure que les parties sont mémorisées."""
 
         game_times = []
         b = Board(hash_table=self.hash_table, hash_turn=self.hash_turn)
-        nb_playouts = 10000
+        nb_playouts = 1000
         save_gif = False
         start_time = time.perf_counter()
-
+        res_sum = 0
         for p in range(nb_playouts):
 
             b_cop = b.copy()
 
             played = []
 
-            if p >= nb_playouts-3:
+            if p >= nb_playouts-2:
                 save_gif = True
 
-            res = b_cop.playout_with_policy(played, 0.22, save_gif)
+            # res = b_cop.playout_with_policy(played, 0.6, save_gif)
+            res = b_cop.playout()
 
-
+            res_sum += res
             game_times.append(b_cop.game_time)
-
-            b.update_table(res, played)
+            if b_cop.game_time > 600:
+                print("big game time :", b_cop.game_time)
+            # b.update_table(res, played)
 
             if p % 100 == 0:
                 print(f'\n ----- {p} playouts ------ \n')
                 print("temps :", round(time.perf_counter() - start_time,2),"s")
                 start_time = time.perf_counter()
 
+        print("Victoires RED : ",res_sum)
 
         with open("game_times.pkl", "wb") as f:
             pickle.dump(game_times, f)
@@ -286,7 +287,7 @@ class TestBoard(unittest.TestCase):
             pickle.dump(b.transposition_table, f)
 
 
-    @skip
+
     def test_plot_mm(self):
         with open("game_times.pkl", "rb") as f:
             game_times = pickle.load(f)

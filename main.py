@@ -2,6 +2,7 @@
 import numpy as np
 import random
 from src.board import Board
+from src.map import Map
 from src.utils import *
 from src.algos import flat, UCB, best_move_UCT
 
@@ -9,7 +10,8 @@ MAX_DICE = 3
 BLOCK = 0
 RED = 1
 BLUE = 2
-EMPTY = 3
+GREEN = 3
+EMPTY = 4
 GOAL = -1
 
 INT2STRING = {RED: 'RED', BLUE: 'BLUE'}
@@ -114,9 +116,11 @@ if __name__ == '__main__':
     print('Debut')
 
 
-    # b = Board(*generate_hash_structures())
-    figs = UCT_game(5000)
+    b = Board(*generate_hash_structures(), mapp=Map("P32-D3-S48-v1"))
 
-    figs2gif(figs)
+    plot_fig(b.display('names'))
+
+
+
 
 
