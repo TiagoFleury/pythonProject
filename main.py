@@ -14,15 +14,21 @@ GREEN = 3
 EMPTY = 4
 GOAL = -1
 
+REF2 = "P22-D3-S34-v1"
+REF3 = "P32-D3-S48-v1"
+
 INT2STRING = {RED: 'RED', BLUE: 'BLUE'}
 
 
-def generate_hash_structures():
-    b = Board()
+def generate_hash_structures(map_reference: str):
+    b = Board(mapp=Map(map_reference))
     keys = list(b.board.nodes)
     nb_cases = len(keys)
-    table = dict(zip(keys, np.random.randint(0, 2 ** 31, (nb_cases, 3))))
-    turn = np.random.randint(0, 2 ** 31)
+    table = dict(zip(keys, np.random.randint(0, 2 ** 31, (nb_cases, b.map.nb_players+1))))
+
+    turn = {RED: np.random.randint(0, 2**31),
+            BLUE: np.random.randint(0, 2**31),
+            GREEN: np.random.randint(0, 2**31)}
 
     return table, turn
 
@@ -115,10 +121,14 @@ def play_vs_UCT(nb_playouts):
 if __name__ == '__main__':
     print('Debut')
 
+    b1 = Board(*generate_hash_structures("P22-D3-S34-v1"), mapp=Map("P22-D3-S34-v1"))
+    b2 = Board(*generate_hash_structures(REF3), mapp=Map("P32-D3-S48-v1"))
 
-    b = Board(*generate_hash_structures(), mapp=Map("P32-D3-S48-v1"))
-
-    plot_fig(b.display('names'))
+    b1.playout()
+    print("GT b1 :", b1.game_time)
+    b2.playout()
+    print("GT b2 :", b2.game_time)
+    plot_fig(b2.display('names'))
 
 
 

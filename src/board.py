@@ -19,8 +19,11 @@ GREEN = 3
 EMPTY = 4
 GOAL = -1
 
-SWITCH = {RED: BLUE, BLUE: RED}
-INT2STRING = {RED: 'RED', BLUE: 'BLUE'}
+
+REF2 = "P22-D3-S34-v1"
+REF3 = "P32-D3-S48-v1"
+
+INT2STRING = {RED: 'RED', BLUE: 'BLUE', GREEN: 'GREEN'}
 
 MAX_DICE = 3
 
@@ -29,13 +32,21 @@ class Board:
 
     def __init__(self, hash_table=None, hash_turn=None, mapp=Map("P22-D3-S34-v1")):
 
-
-        self.hashcode = 0  # On aura un hashcode unique pour chaque position de jeu possible (voir section hachage de Zobrist)
+        self.hashcode = 0  # On aura un hashcode unique pour chaque position de jeu possible (voir section hachage de
+        # Zobrist)
 
         if mapp.reference == "P22-D3-S34-v1":
             self.piece_pools = {RED: ['a0', 2], BLUE: ['i0', 2]}
+            self.opponents = {RED: [BLUE],
+
+                              BLUE: [RED]}
         elif mapp.reference == "P32-D3-S48-v1":
             self.piece_pools = {RED: ['a0', 2], BLUE: ['i0', 2], GREEN: ['e0', 2]}
+            self.opponents = {
+                RED: [GREEN, BLUE],
+                GREEN: [RED, BLUE],
+                BLUE: [GREEN, RED]
+            }
 
         self.turn = RED
 
@@ -43,7 +54,7 @@ class Board:
 
         self.over = False
 
-        self.score = None  # Sera à 1 si RED gagne, 0 si BLUE gagne.
+        self.winner = None  # On utilisera un dictionnaire pour stocker les victoires des joueurs
 
         self.hash_table = hash_table
         self.hash_turn = hash_turn
@@ -53,12 +64,28 @@ class Board:
         self.map = mapp
         self.board = mapp.get_board()
 
+    def next(self):
+        if self.map.reference == "P22-D3-S34-v1":
+            if self.turn == RED:
+                return BLUE
+            elif self.turn == BLUE:
+                return RED
+
+        elif self.map.reference == "P32-D3-S48-v1":
+            if self.turn == RED:
+                return GREEN
+            elif self.turn == GREEN:
+                return BLUE
+            elif self.turn == BLUE:
+                return RED
+
     def get_content(self, node_name):
         return self.board.nodes[node_name]['content']
 
     def change_content(self, node_name, new_content):
-        if new_content not in [RED, BLUE, BLOCK, GOAL, EMPTY]:
+        if new_content not in [RED, BLUE, GREEN, BLOCK, GOAL, EMPTY]:
             print("Mauvaise valeur pour 'content' !, vous avez placé : ", new_content)
+            raise BaseException
         else:
             self.board.nodes[node_name]['content'] = new_content
 
@@ -92,7 +119,7 @@ class Board:
                                 dice_score=dice_score)
 
                     if move.is_valid(self):
-                        # Une fois que le move est validé, il faut spécifier ou envoyer le block si c'est nécessaire
+                        # Une fois que le move est validé, il faut spécifier où envoyer le block si c'est nécessaire
 
                         if move.block is False:
                             valid_moves.append(move)
@@ -127,29 +154,29 @@ class Board:
 
             # S'il y a une pièce de l'adversaire à l'arrivée on l'enlève également
 
-            opponent_color = SWITCH[move.player]
+            opponent_color = self.opponents[move.player]
 
             if move.content_end_node == GOAL:
                 self.over = True
-                if self.turn == RED:
-                    self.score = 1
-                else:
-                    self.score = 0
+                self.winner = self.turn
 
-            if move.content_end_node == opponent_color:
-                opponent_pool_node = self.piece_pools[opponent_color][0]
+            if move.content_end_node in opponent_color:
+                opponent_pool_node = self.piece_pools[move.content_end_node][0]
                 # On enlève la pièce
                 self.change_content(move.end_node, EMPTY)  # Ligne possiblement inutile
                 # On actualise le hash_code
-                self.hashcode = self.hashcode ^ self.hash_table[move.end_node][opponent_color]
-
+                self.hashcode = self.hashcode ^ self.hash_table[move.end_node][move.content_end_node]
+                if move.content_end_node not in opponent_color:
+                    print("Bizarre, la valeur de move.content_end_node a changé")
                 # Puis on replace la pièce dans son pool
-                self.piece_pools[opponent_color][1] += 1  # On incrémente le nombre de pièces présentes dans le pool
+                self.piece_pools[move.content_end_node][
+                    1] += 1  # On incrémente le nombre de pièces présentes dans le pool
                 # On actualise le hashcode en utilisant cette valeur
 
-                self.hashcode = self.hashcode ^ self.hash_table[opponent_pool_node][self.piece_pools[opponent_color][1]]
+                self.hashcode = self.hashcode ^ self.hash_table[opponent_pool_node][
+                    self.piece_pools[move.content_end_node][1]]
 
-                self.change_content(opponent_pool_node, opponent_color)  # On met une pièce sur la case.
+                self.change_content(opponent_pool_node, move.content_end_node)  # On met une pièce sur la case.
 
             if move.block:  # Si c'est un coup qui déplace un block.
 
@@ -160,6 +187,8 @@ class Board:
                 # Ensuite il faut replacer le block quelque part
 
                 self.change_content(move.chosen_placement, BLOCK)
+
+                # Cette case sera forcément vide, on peut mettre directement un BLOCK dedans
                 self.hashcode = self.hashcode ^ self.hash_table[move.chosen_placement][BLOCK]
 
             # Enfin, il faut placer la pièce du joueur et actualiser une dernière fois le hashcode
@@ -167,9 +196,13 @@ class Board:
             self.change_content(move.end_node, move.player)
             self.hashcode = self.hashcode ^ self.hash_table[move.end_node][move.player]
 
-        # On termine le tour en changeant de tour et en appliquant le hashcode correspondant
-        self.turn = SWITCH[self.turn]
-        self.hashcode = self.hashcode ^ self.hash_turn
+        # On termine le tour en changeant de tour et en modifiant le hash_turn correctement
+        # Ce n'est plus le tour du joueur qui vient de jouer
+        self.hashcode = self.hashcode ^ self.hash_turn[self.turn]
+        # On récupère la couleur du prochain joueur
+        self.turn = self.next()
+        # Et c'est maintenant à son tour de jouer
+        self.hashcode = self.hashcode ^ self.hash_turn[self.turn]
 
         self.game_time += 1
 
@@ -179,7 +212,7 @@ class Board:
         """Fonction qui joue aléatoirement une partie à partir de l'état actuel et qui retourne le résultat."""
 
         while not self.over:
-            valid_moves = self.valid_moves(random.randint(1, MAX_DICE))  # Récupération des moves valides
+            valid_moves = self.valid_moves(random.randint(1, self.map.max_dice))  # Récupération des moves valides
             if len(valid_moves) != 0:
                 chosen_move = random.choice(valid_moves)
                 self.play(chosen_move)
@@ -187,20 +220,9 @@ class Board:
                 # Dans ce cas, il n'y a pas de coup jouable
                 self.play(None)  # On passe son tour.
 
-        return self.score  # On va retourner 0 si c'est RED qui gagne et 1 si c'est BLUE
+        return self.winner  # On va retourner 0 si c'est RED qui gagne et 1 si c'est BLUE
 
-    def playout_AMAF(self):
-        """Fonction qui joue un playout tout en sauvegardant les statistiques AMAF pour tous les coups joués """
-        played = []
-        while not self.over:
-            dice_score = random.randint(1, self.map.max_dice)
-            valid_moves = self.valid_moves(dice_score)
-            if len(valid_moves) != 0:
-                chosen_move = random.choice(valid_moves)
-                chosen_destination = None
-
-
-    def playout_with_policy(self, played_moves=None, exploration_parameter=1, save_gif=False):
+    def playout_MAST(self, played_moves=None, exploration_parameter=1, save_gif=False):
 
         if played_moves is None:
             played_moves = []
@@ -209,11 +231,10 @@ class Board:
         if save_gif is True:
             figs = [self.display('names')]
 
-        while not self.over: # and self.game_time < 4:
+        while not self.over:  # and self.game_time < 4:
 
             dice_score = random.randint(1, self.map.max_dice)
             valid_moves = self.valid_moves(dice_score)
-
 
             if len(valid_moves) != 0:
                 policy = self.get_policy(valid_moves, exploration_parameter=exploration_parameter)
@@ -229,27 +250,24 @@ class Board:
                 figs.append(self.display('names'))
 
         if save_gif is True:
-            figs2gif(figs, "new_playout_gt"+str(self.game_time)+".gif")
+            figs2gif(figs, "new_playout_gt" + str(self.game_time) + ".gif")
 
-        return self.score
+        return self.winner
 
     def get_policy(self, move_list, exploration_parameter=1):
         policy = np.zeros(len(move_list))
 
         for i, move in enumerate(move_list):
             move_code = move.code(self.map)
-            # On commence par faire la somme des exp des taux de victoire AMAF
-            # et préparer la politique de tirage des coups
+            # On fait la somme des exp des taux de victoire AMAF pour préparer
+            # la politique de tirage des coups
             if self.transposition_table.playouts_amaf[move_code] == 0:
                 amaf_victory_rate = 0
             else:
-                amaf_victory_rate = self.transposition_table.win_amaf[move_code] / \
-                                    self.transposition_table.playouts_amaf[move_code]
-                if move.player == BLUE:
-                    amaf_victory_rate = 1 - amaf_victory_rate
+                amaf_victory_rate = self.transposition_table.win_amaf[move_code][move.player]
+                amaf_victory_rate /= self.transposition_table.playouts_amaf[move_code]
 
             policy[i] = math.exp(amaf_victory_rate / exploration_parameter)
-
 
         # On crée ensuite le vecteur qui servira de politique pour tirer le coup dans le playout
         return policy / policy.sum()
@@ -307,28 +325,37 @@ class Board:
         return fig
 
     def copy(self):
-        cop = Board()
-        cop.board = nx.Graph()
+        cop = Board(mapp=self.map)
+
+        cop.map = self.map
+
         for n, data in self.board.nodes(data=True):
-            cop.board.add_node(n, content=data['content'])
-        cop.board.add_edges_from(self.board.edges)
+            cop.change_content(n, new_content=data['content'])
 
         cop.hashcode = self.hashcode
         cop.hash_table = self.hash_table
         cop.hash_turn = self.hash_turn
+        cop.transposition_table = self.transposition_table
+
         cop.game_time = self.game_time
-        cop.piece_pools = {RED: ['a0', self.piece_pools[RED][1]], BLUE: ['i0', self.piece_pools[BLUE][1]]}
+
+        if self.map.reference == REF2:
+            cop.piece_pools = {RED: ['a0', self.piece_pools[RED][1]],
+                               BLUE: ['i0', self.piece_pools[BLUE][1]]}
+        if self.map.reference == REF3:
+            cop.piece_pools = {
+                RED: ['a0', self.piece_pools[RED][1]],
+                BLUE: ['i0', self.piece_pools[BLUE][1]],
+                GREEN: ['e0', self.piece_pools[GREEN][1]]
+            }
 
         cop.over = self.over
-        cop.score = self.score
+        cop.winner = copy.deepcopy(self.winner)
         cop.turn = self.turn
-        cop.transposition_table = self.transposition_table
         return cop
 
-    def update_table(self, score, played_moves: list[tuple[Move, str]]):
+    def update_table(self, winner, played_moves: list[Move]):
         for move in played_moves:
             move_code = move.code(self.map)
             self.transposition_table.playouts_amaf[move_code] += 1
-            self.transposition_table.win_amaf[move_code] += score
-
-
+            self.transposition_table.win_amaf[move_code][winner] += 1

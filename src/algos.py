@@ -36,7 +36,7 @@ def flat(board, dice_score, nb_playout):
             b = board.copy()
             b.play(move)
             played = []
-            r = b.playout_with_policy(played, exploration_parameter=0.22)
+            r = b.playout_MAST(played, exploration_parameter=0.22)
             board.update_table(r, played)
 
             if board.turn == BLUE:
@@ -93,7 +93,7 @@ def UCB(board, dice_score, nb_playouts):  # Ici nb_playouts est le nombre TOTAL 
 
         # Puis faire un playout et récupérer le résultat
         played = []
-        r = b.playout_with_policy(played, exploration_parameter=0.23)
+        r = b.playout_MAST(played, exploration_parameter=0.23)
         board.update_table(r, played)  # On met à jour la table pour les prochains playouts
 
         if board.turn == BLUE:
@@ -117,7 +117,7 @@ def UCB(board, dice_score, nb_playouts):  # Ici nb_playouts est le nombre TOTAL 
 # Algorithme UCT
 def UCT(board: Board, dice_score, played, c):
     if board.over:  # Si l'état est terminal on renvoie le score.
-        return board.score
+        return board.winner
 
     # sinon on récupère l'entrée dans la table de transposition.
     t = board.look_table()
@@ -172,7 +172,7 @@ def UCT(board: Board, dice_score, played, c):
     else:  # Si l'etat n'a jamais été visité, on ajoute juste l'état dans la table et on retourne le résultat d'un
         # playout
         board.new_table_entry()
-        res = board.playout_with_policy(played, exploration_parameter=0.3)
+        res = board.playout_MAST(played, exploration_parameter=0.3)
         return res
 
 

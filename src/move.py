@@ -77,10 +77,11 @@ class Move:
 
         code = 0
 
-        nb_options = mapp.nb_players - 1 + 2 # Sur la case d'arrivée, on peut arriver sur : ADVERSAIRE1, ADVERSAIRE2... ou EMPTY ou GOAL. On traite le cas des BLOCK à côté
+        nb_options = 3 # Sur la case d'arrivée du move, on peut arriver sur : Un adversaire, EMPTY, ou GOAL
+        # On traite le cas des blocks à côté
 
         if self.content_end_node == BLOCK:
-            code += mapp.possible_block_placements.index(self.chosen_placement) + nb_options  # +3 parce qu'il faut la place pour EMPTY, PLAYERS, GOAL
+            code += mapp.possible_block_placements.index(self.chosen_placement) + nb_options  # +3 parce qu'il faut la place pour EMPTY, OPPONENT, GOAL
         else:
             code += mapp.content2code[self.content_end_node]
 
