@@ -33,24 +33,20 @@ def generate_hash_structures(map_reference: str):
     return table, turn
 
 
-def flat_game(nb_playouts, game_time_limit=100):
-    hash_table, hash_turn = generate_hash_structures()
-    board = Board(hash_table=hash_table, hash_turn=hash_turn)
+def flat_game(board, nb_playouts, game_time_limit=100):
 
-    figures = [board.display()]
+    figures = [board.display('names')]
     while not board.over and board.game_time < game_time_limit:
         dice_score = random.randint(1, MAX_DICE)
         best_move = flat(board, dice_score, nb_playouts)
         board.play(best_move)
-        figures.append(board.display())
+        figures.append(board.display('names'))
         print('game_time :', board.game_time)
 
     return figures
 
 
-def UCB_game(nb_playouts, game_time_limit=100):
-    hash_table, hash_turn = generate_hash_structures()
-    board = Board(hash_table=hash_table, hash_turn=hash_turn)
+def UCB_game(board, nb_playouts, game_time_limit=100):
 
     figures = [board.display('names')]
     while not board.over and board.game_time < game_time_limit:
@@ -62,13 +58,11 @@ def UCB_game(nb_playouts, game_time_limit=100):
     return figures
 
 
-def UCT_game(nb_playouts, game_time_limit=100, save_gif=True):
-    hash_table, hash_turn = generate_hash_structures()
-    board = Board(hash_table=hash_table, hash_turn=hash_turn)
+def UCT_game(board, nb_playouts, game_time_limit=100, save_gif=True):
 
     figures = []
     if save_gif is True:
-        figures = [board.display()]
+        figures = [board.display('names')]
     while not board.over and board.game_time < game_time_limit:
         dice_score = random.randint(1, board.map.max_dice)
         best_move = best_move_UCT(board, dice_score, nb_playouts, c=0.6)
@@ -124,11 +118,9 @@ if __name__ == '__main__':
     b1 = Board(*generate_hash_structures("P22-D3-S34-v1"), mapp=Map("P22-D3-S34-v1"))
     b2 = Board(*generate_hash_structures(REF3), mapp=Map("P32-D3-S48-v1"))
 
-    b1.playout()
-    print("GT b1 :", b1.game_time)
-    b2.playout()
-    print("GT b2 :", b2.game_time)
-    plot_fig(b2.display('names'))
+    figs = UCT_game(b2, 1000, 150)
+
+    figs2gif(figs, "UCT_3j_1000plyt.gif")
 
 
 

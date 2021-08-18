@@ -4,12 +4,12 @@ import random
 import numpy as np
 
 from src.board import Board
-from src.table import Table
-from src.move import Move
+
 
 BLOCK = 0
 RED = 1
 BLUE = 2
+GREEN = 3
 EMPTY = 4
 GOAL = -1
 
@@ -17,7 +17,7 @@ MAX_DICE = 3
 INT2STRING = {RED: 'RED', BLUE: 'BLUE', EMPTY: 'EMPTY', BLOCK: 'BLOCK'}
 
 
-def flat(board, dice_score, nb_playout):
+def flat(board: Board, dice_score: int, nb_playout: int):
     valid_moves = board.valid_moves(dice_score)
 
     best_score = 0
@@ -29,32 +29,31 @@ def flat(board, dice_score, nb_playout):
 
     for move in valid_moves:  # Pour chaque move, on fait un certain nombre de playout
         # et on va faire des stats sur ces derniers
-        print("Evalutation de", move, end="")
+        print("Evalutation de", move, end=" ")
         sum_wins = 0
 
         for p in range(nb_playout):
             b = board.copy()
             b.play(move)
             played = []
-            r = b.playout_MAST(played, exploration_parameter=0.22)
-            board.update_table(r, played)
+            winner = b.playout_MAST(played, exploration_parameter=0.22)
+            board.update_table(winner, played)
 
-            if board.turn == BLUE:
-                r = 1 - r
-            sum_wins += r
+            if winner == move.player:
+                sum_wins += 1
 
         score = sum_wins / nb_playout
 
         if score > best_score:
-            print("le score a été battu", end='')
+            print("le score a été battu", end=' ')
             best_score = score
             best_move = move
         print(f'[{score * nb_playout}/{nb_playout}]')
-    print("Meilleur move :", best_move, best_score * nb_playout)
+    print(f"Meilleur move : {best_move} [{best_score * nb_playout}/{nb_playout}]")
     return best_move
 
 
-def UCB(board, dice_score, nb_playouts):  # Ici nb_playouts est le nombre TOTAL de playouts qu'on va faire
+def UCB(board: Board, dice_score, nb_playouts):  # Ici nb_playouts est le nombre TOTAL de playouts qu'on va faire
     valid_moves = board.valid_moves(dice_score)  # On veut faire des statistiques sur chacun de ces coups
 
     # Il faut faire une extension des coups pour pouvoir faire des stats sur les coups qui bougent des blocs.
@@ -93,15 +92,12 @@ def UCB(board, dice_score, nb_playouts):  # Ici nb_playouts est le nombre TOTAL 
 
         # Puis faire un playout et récupérer le résultat
         played = []
-        r = b.playout_MAST(played, exploration_parameter=0.23)
-        board.update_table(r, played)  # On met à jour la table pour les prochains playouts
-
-        if board.turn == BLUE:
-            r = 1 - r
+        winner = b.playout_MAST(played, exploration_parameter=0.23)
+        board.update_table(winner, played)  # On met à jour la table pour les prochains playouts
 
         # Et save les stats
-
-        sums[chosen_move] += r
+        if winner == board.turn:
+            sums[chosen_move] += 1
         nb_visits[chosen_move] += 1
 
     print(nb_visits)
@@ -130,20 +126,20 @@ def UCT(board: Board, dice_score, played, c):
 
         if len(moves) == 0:
             board.play(None)
-            res = UCT(board, random.randint(1, MAX_DICE), played, c)
+            res = UCT(board, random.randint(1, board.map.max_dice), played, c)
             t[0] += 1  # On a bien vu l'etat mais on a joué aucun coup
             return res
 
         else:
+            player = moves[0].player
             best_moves = []
             # On va choisir le move qui maximise UCB, sauf s'il y a des coups non essayés.
             for m in range(len(moves)):
                 score = 1000000.0
 
                 if t[1][m] > 0:  # Si le nombre de fois que le coup a été joué est supérieur à 0
-                    Q = t[2][m] / t[1][m]  # Calcul du nombre de victoires moyenne de RED
-                    if board.turn == BLUE: # Si c'est BLUE qui joue, il faut inverser
-                        Q = 1 - Q
+                    Q = t[2][m][player] / t[1][m]  # Calcul du nombre de victoires moyenne du joueur actuel
+
                     score = Q + c * math.sqrt(math.log(t[0]) / t[1][m])  # Formule UCB
 
                 if score > best_score:
@@ -159,15 +155,15 @@ def UCT(board: Board, dice_score, played, c):
 
             # Puis on fait un appel récursif pour le nouveau board avec un lancer de dé aléatoire
 
-            res = UCT(board, random.randint(1, board.map.max_dice), played, c)  # On obtiendra un résultat sur ce board
+            winner = UCT(board, random.randint(1, board.map.max_dice), played, c)  # On obtiendra un résultat sur ce board
 
             # On l'utilise pour mettre à jour les statistiques du meilleur coup.
 
             t[0] += 1  # Nb de fois qu'on a vu l'état
             t[1][choice] += 1  # Nb de playouts qui commencent par ce coup
-            t[2][choice] += res  # Nb de victoires de RED pour ce coup
+            t[2][choice][winner] += 1  # Nb de victoires de RED pour ce coup
             # Et on le remonte aux étapes récursives précédentes.
-            return res
+            return winner
 
     else:  # Si l'etat n'a jamais été visité, on ajoute juste l'état dans la table et on retourne le résultat d'un
         # playout
@@ -185,8 +181,8 @@ def best_move_UCT(board: Board, dice_score, nb_playouts, c=0.4):
     for i in range(nb_playouts):  # On fait n simulations
         b1 = board.copy()
         played = []
-        res = UCT(b1, dice_score, played, c)  # On obtient un résultat.
-        board.update_table(res, played)
+        winner = UCT(b1, dice_score, played, c)  # On obtient un résultat.
+        board.update_table(winner, played)
 
     # Donc là on a fait n playout en ajoutant à chaque fois un état dans l'abre c'est à dire dans la table
     # de transposition.
