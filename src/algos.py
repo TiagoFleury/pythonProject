@@ -126,9 +126,9 @@ def UCT(board: Board, dice_score, played, mode=1, c=0.4):
 
         if len(moves) == 0:
             board.play(None)
-            res = UCT(board, random.randint(1, board.map.max_dice), played, mode, c)
+            winner = UCT(board, random.randint(1, board.map.max_dice), played, mode, c)
             t[0] += 1  # On a bien vu l'etat mais on a joué aucun coup
-            return res
+            return winner
 
         else:
             player = moves[0].player
@@ -202,6 +202,106 @@ def best_move_UCT(board: Board, dice_score, nb_playouts, mode=1, c=0.4):
     best_value = 0
 
     for m in range(len(moves)):
+        # print('Pour', moves[m], ':', t[1][m], 'playout')
+        if t[1][m] > best_value:
+            best_value = t[1][m]
+            best_moves = [m]
+
+        if t[1][m] == best_value:
+            best_moves.append(m)
+    # print("La table contient :", len(board.transposition_table.table))
+    return moves[random.choice(best_moves)]
+
+
+def RAVE(board: Board, dice_score, played, mode):
+    if board.over:
+        return board.winner
+
+    t = board.look_table()
+
+    if t != None:
+        best_score = -1
+        moves = board.valid_moves(dice_score)
+
+        if len(moves) == 0:
+            board.play(None)
+            winner = RAVE(board, random.randint(1, board.map.max_dice), played, mode)
+            t[0] += 1
+            return winner
+
+        else :
+            player = moves[0].player
+            best_moves = []
+
+            for m in range(len(moves)):
+                score = 100000
+                move_code = moves[m].code(board.map)
+
+                n_amaf = board.transposition_table.playouts_amaf[move_code]
+                win_amaf = board.transposition_table.win_amaf[move_code][player]
+
+                if n_amaf > 0:
+                    # C'est la formule du beta donnée dans le papier de RAVE
+
+                    beta = n_amaf / (t[1][m] + n_amaf + 1e-5*t[1][m]*n_amaf )
+
+                    Q = 1 # Valeur par défaut pour t[2] / t[1]
+                    if t[1][m] > 0:
+                        Q = t[2][m][player] / t[1][m] # Le taux de victoire "réel"
+
+                    Q2 = win_amaf / n_amaf
+
+                    score = (1.0 - beta)*Q + beta*Q2
+
+                if score > best_score:
+                    best_score = score
+                    best_moves = [m]
+                elif score == best_score:
+                    best_moves.append(m)
+
+            # On joue un des meilleurs coups qu'on choisit au hasard.
+            choice = random.choice(best_moves)
+            board.play(moves[choice])
+            played.append(moves[choice])
+
+            # On fait ensuite l'appel récursif comme dans UCT
+            winner = RAVE(board, random.randint(1, board.map.max_dice), played, mode)
+
+            # Et enfin on met à jour les statistiques avec le résultat
+
+            t[0] += 1  # Nb de fois qu'on a vu l'état
+            t[1][choice] += 1  # Nb de playouts qui commencent par ce coup
+            t[2][choice][winner] += 1  # Nb de victoires de RED pour ce coup
+
+            return winner
+
+    else: # Dans le cas ou l'état n'a jamais été vu :
+        board.new_table_entry()
+        winner = board.playout_MAST(played, exploration_parameter=0.5, mode=mode)
+        return winner
+
+
+
+
+
+
+
+def best_move_RAVE(board, dice_score, nb_playouts, mode=1):
+    board.transposition_table.table = {}
+    for i in range(nb_playouts):
+        b1 = board.copy()
+        played = []
+        winner = RAVE(b1, dice_score, played, mode)
+        b1.update_table(winner, played)
+
+    t = board.look_table()
+
+    moves = board.valid_moves(dice_score)
+
+    best_moves = []
+    best_value = 0
+
+    for m in range(len(moves)):
         print('Pour', moves[m], ':', t[1][m], 'playout')
         if t[1][m] > best_value:
             best_value = t[1][m]
@@ -209,5 +309,6 @@ def best_move_UCT(board: Board, dice_score, nb_playouts, mode=1, c=0.4):
 
         if t[1][m] == best_value:
             best_moves.append(m)
-    print("La table contient :", len(board.transposition_table.table))
     return moves[random.choice(best_moves)]
+
+

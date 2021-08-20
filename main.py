@@ -1,11 +1,13 @@
+import pickle
 
 import numpy as np
 import random
 import time
+import pprint
 from src.board import Board
 from src.map import Map
 from src.utils import *
-from src.algos import flat, UCB, best_move_UCT
+from src.algos import flat, UCB, best_move_UCT, best_move_RAVE
 
 MAX_DICE = 3
 BLOCK = 0
@@ -115,14 +117,66 @@ def play_vs_UCT(nb_playouts):
     return figures
 
 
+def UCT_vs_UCT(board, nb_playouts, nb_games):
+    sum_wins = {RED: 0, BLUE: 0}
+    if board.map.nb_players == 3:
+        sum_wins[GREEN] = 0
+    for g in range(nb_games):
+        b_cop = board.copy()
+        print("Game "+str(g+1),end=" ")
+        start_time = time.perf_counter()
+        while not b_cop.over:
+            dice_score = random.randint(1, board.map.max_dice)
+            chosen_move_red = best_move_UCT(b_cop, dice_score, nb_playouts, mode=1)
+            b_cop.play(chosen_move_red)
+
+            if b_cop.over:
+                break
+
+            dice_score = random.randint(1, board.map.max_dice)
+            chosen_move_blue = best_move_UCT(b_cop, dice_score, nb_playouts, mode=2)
+            b_cop.play(chosen_move_blue)
+        end_time = time.perf_counter()
+        sum_wins[b_cop.winner] += 1
+        print(f"- game_time : {b_cop.game_time} {round((end_time - start_time)/60,0)}min)")
+        print("WINS : ")
+        print("RED  -  BLUE  -  GREEN")
+        pprint.pprint(sum_wins)
+        with open(f"sum_wins_{nb_playouts}plyt_{g}games.pkl", "wb") as f:
+            pickle.dump(sum_wins, f)
+
+
+
+
+def RAVE_game(board: Board, nb_playouts, game_time_limit, mode, save_gif=False):
+    figures = []
+    if save_gif is True:
+        figures = [board.display('names')]
+    while not board.over and board.game_time < game_time_limit:
+
+        dice_score = random.randint(1, board.map.max_dice)
+        start_time = time.perf_counter()
+        best_move = best_move_RAVE(board, dice_score, nb_playouts, mode)
+        end_time = time.perf_counter()
+        board.play(best_move)
+        if save_gif is True:
+            figures.append(board.display('names'))
+        print('game_time :', board.game_time, f'({round(end_time - start_time, 2)}s)')
+    if save_gif is True:
+        return figures
+
+
+
 if __name__ == '__main__':
     print('Debut')
 
     b1 = Board(*generate_hash_structures("P22-D3-S34-v1"), mapp=Map("P22-D3-S34-v1"))
     b2 = Board(*generate_hash_structures(REF3), mapp=Map("P32-D3-S48-v1"))
 
-    figs = UCT_game(b2, 600, 150, mode=2)
-    figs2gif(figs, "UCT_3j_600plyt_mode2.gif")
+    UCT_vs_UCT(b1, 20, 2)
+
+    # figs = RAVE_game(b2, 50, 150, mode=2)
+    # figs2gif(figs, "UCT_3j_600plyt_mode2.gif")
 
 
 

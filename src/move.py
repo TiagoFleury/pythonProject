@@ -1,6 +1,8 @@
 import copy
 from typing import List, Union, Tuple, Any
 
+from src.map import Map
+
 BLOCK = 0
 RED = 1
 BLUE = 2
@@ -72,7 +74,7 @@ class Move:
                     extended_list.append((move, pos))
         return extended_list
 
-    def code(self, mapp):
+    def code(self, mapp: Map):
         # Il faut associer à chaque coup possible un code pour pouvoir stocker les statistiques AMAF
 
         code = 0
