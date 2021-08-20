@@ -111,7 +111,7 @@ def UCB(board: Board, dice_score, nb_playouts):  # Ici nb_playouts est le nombre
 
 
 # Algorithme UCT
-def UCT(board: Board, dice_score, played, c):
+def UCT(board: Board, dice_score, played, mode=1, c=0.4):
     if board.over:  # Si l'état est terminal on renvoie le score.
         return board.winner
 
@@ -126,7 +126,7 @@ def UCT(board: Board, dice_score, played, c):
 
         if len(moves) == 0:
             board.play(None)
-            res = UCT(board, random.randint(1, board.map.max_dice), played, c)
+            res = UCT(board, random.randint(1, board.map.max_dice), played, mode, c)
             t[0] += 1  # On a bien vu l'etat mais on a joué aucun coup
             return res
 
@@ -155,7 +155,7 @@ def UCT(board: Board, dice_score, played, c):
 
             # Puis on fait un appel récursif pour le nouveau board avec un lancer de dé aléatoire
 
-            winner = UCT(board, random.randint(1, board.map.max_dice), played, c)  # On obtiendra un résultat sur ce board
+            winner = UCT(board, random.randint(1, board.map.max_dice), played, mode, c)  # On obtiendra un résultat sur ce board
 
             # On l'utilise pour mettre à jour les statistiques du meilleur coup.
 
@@ -168,7 +168,7 @@ def UCT(board: Board, dice_score, played, c):
     else:  # Si l'etat n'a jamais été visité, on ajoute juste l'état dans la table et on retourne le résultat d'un
         # playout
         board.new_table_entry()
-        res = board.playout_MAST(played, exploration_parameter=0.3)
+        res = board.playout_MAST(played, exploration_parameter=0.5, mode=mode)
         return res
 
 
@@ -176,12 +176,13 @@ def UCT(board: Board, dice_score, played, c):
 # le meilleur coup calculé grâce à UCT
 
 
-def best_move_UCT(board: Board, dice_score, nb_playouts, c=0.4):
+def best_move_UCT(board: Board, dice_score, nb_playouts, mode=1, c=0.4):
 
+    board.transposition_table.table = {}
     for i in range(nb_playouts):  # On fait n simulations
         b1 = board.copy()
         played = []
-        winner = UCT(b1, dice_score, played, c)  # On obtient un résultat.
+        winner = UCT(b1, dice_score, played, mode, c)  # On obtient un résultat.
         board.update_table(winner, played)
 
     # Donc là on a fait n playout en ajoutant à chaque fois un état dans l'abre c'est à dire dans la table
@@ -208,5 +209,5 @@ def best_move_UCT(board: Board, dice_score, nb_playouts, c=0.4):
 
         if t[1][m] == best_value:
             best_moves.append(m)
-
+    print("La table contient :", len(board.transposition_table.table))
     return moves[random.choice(best_moves)]

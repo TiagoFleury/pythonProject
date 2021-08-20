@@ -103,7 +103,7 @@ class TestBoard3Players(unittest.TestCase):
 
         game_times = []
         b = Board(hash_table=self.hash_table, hash_turn=self.hash_turn, mapp=Map(REF3))
-        nb_playouts = 3000
+        nb_playouts = 1000
         save_gif = False
         start_time = time.perf_counter()
         res_sum = {
@@ -114,33 +114,36 @@ class TestBoard3Players(unittest.TestCase):
 
         for p in range(nb_playouts):
 
-            b_cop = b.copy()
+            b_cop = self.b.copy()
 
             played = []
 
             if p >= nb_playouts:
                 save_gif = True
 
-            # winner = b_cop.playout_MAST(played, 0.2, save_gif)
-            winner = b_cop.playout()
+            winner = b_cop.playout_MAST(played, 0.5, mode=2, save_gif=save_gif)
+            # winner = b_cop.playout(mode=2)
             res_sum[winner] += 1
             game_times.append(b_cop.game_time)
-            if b_cop.game_time > 500:
+            if b_cop.game_time > 600:
                 print("big game time :", b_cop.game_time)
-            b.update_table(winner, played)
+            # b.update_table(winner, played)
 
             if p % 100 == 0:
                 print(f'\n ----- {p} playouts ------ \n')
                 print("temps :", round(time.perf_counter() - start_time,2),"s")
                 start_time = time.perf_counter()
 
-        print("Victoires RED : ", res_sum[RED])
+        print("Victoires RED :", res_sum[RED])
+        print("Victoires BLUE :", res_sum[BLUE])
+        print("Victoires GREEN :", res_sum[GREEN])
+
 
         with open("game_times_3player.pkl", "wb") as f:
             pickle.dump(game_times, f)
 
-        with open("table_test_3player.pkl","wb") as f:
-            pickle.dump(b.transposition_table, f)
+        # with open("table_test_3player.pkl","wb") as f:
+        #     pickle.dump(b.transposition_table, f)
 
     def test_plot_mm(self):
         '''
@@ -149,13 +152,13 @@ class TestBoard3Players(unittest.TestCase):
         with open("game_times_3player.pkl", "rb") as f:
             game_times = pickle.load(f)
 
-        mm200 = np.convolve(game_times, np.ones(200), 'valid') / 200
+        mm300 = np.convolve(game_times, np.ones(300), 'valid') / 300
         mm100 = np.convolve(game_times, np.ones(100), 'valid') / 100
         mm50 = np.convolve(game_times, np.ones(50), 'valid') / 50
 
         # plt.plot(mm50, label="mm50")
         plt.plot(mm100, label='mm100')
-        plt.plot(mm200, label='mm200')
+        plt.plot(mm300, label='mm300')
         plt.legend()
         plt.show()
 

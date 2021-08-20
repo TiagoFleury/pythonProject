@@ -204,6 +204,44 @@ class TestBoard2Players(unittest.TestCase):
         for i in range(len(moves)):
             self.assertEqual(str(moves[i]), str(moves_bis[i]))
 
+    def test_playout_policy_2(self):
+        # La on essaie d'observer les probas pour la deuxième méthode de playout
+        self.b.change_content("e5", RED)
+        self.b.piece_pools[RED][1] -= 1
+
+        valid_moves = self.b.valid_moves(3)
+        grouped_moves = self.b.get_grouped_moves(valid_moves)
+
+
+        policy = self.b.get_policy(grouped_moves, 1)
+
+        table = self.b.transposition_table
+
+        for i, m in enumerate(grouped_moves[0]+grouped_moves[1:]):
+
+            print(i,':',m,end=" ")
+
+            print("Proba : "+str(policy[i]))
+            # self.assertGreaterEqual(policy[-1], policy[i])
+
+        for m in valid_moves :
+            print(m,end=" - ")
+            code = m.code(self.b.map)
+            print(table.win_amaf[code][m.player], "/", table.playouts_amaf[code],
+                  )  # , round(table.win_amaf[code]/table.playouts_amaf[code],2))
+
+        # On va faire 100 playout et voir si on retrouve bien les bonnes stats sur les coups gagnants
+
+        win_move_blue = Move(BLUE, 'e8', 'e9', GOAL, ['e8','e9'],1)
+        win_move_red = Move(RED, 'e8', 'e9', GOAL, ['e8','e9'],1)
+
+        self.assertEqual(table.win_amaf[win_move_blue.code(self.b.map)][RED], 0)
+        self.assertEqual(table.win_amaf[win_move_red.code(self.b.map)][BLUE], 0)
+
+        self.assertEqual(table.win_amaf[win_move_red.code(self.b.map)][RED], table.playouts_amaf[win_move_red.code(self.b.map)])
+        self.assertEqual(table.win_amaf[win_move_blue.code(self.b.map)][BLUE], table.playouts_amaf[win_move_blue.code(self.b.map)])
+
+
     def test_playout_policy(self):
 
 
@@ -216,20 +254,23 @@ class TestBoard2Players(unittest.TestCase):
 
         table = self.b.transposition_table
 
+        best_i = None
         for i, m in enumerate(valid_moves):
-
+            if m.start_node == 'e5' and m.end_node == 'e8':
+                best_i = i
             print(i,':',m,end=" ")
             code = m.code(self.b.map)
             print(table.win_amaf[code][m.player], "/", table.playouts_amaf[code],"-")#, round(table.win_amaf[code]/table.playouts_amaf[code],2))
             print("Proba : "+str(policy[i]))
-            self.assertGreaterEqual(policy[-1], policy[i])
+
+        for i in range(len(valid_moves)):
+            self.assertGreaterEqual(policy[best_i], policy[i])
 
 
         # On va faire 100 playout et voir si on retrouve bien les bonnes stats sur les coups gagnants
 
         win_move_blue = Move(BLUE, 'e8', 'e9', GOAL, ['e8','e9'],1)
         win_move_red = Move(RED, 'e8', 'e9', GOAL, ['e8','e9'],1)
-
 
         self.assertEqual(table.win_amaf[win_move_blue.code(self.b.map)][RED], 0)
         self.assertEqual(table.win_amaf[win_move_red.code(self.b.map)][BLUE], 0)
@@ -245,14 +286,14 @@ class TestBoard2Players(unittest.TestCase):
         # et ensuite seulement si on tombe sur la barricade je tire le placement de la barricade.
         # Ca peut être vraiment bien je pense que je vais faire ça de ce pas en fait.
 
-    @skip
+
     def test_playout_mm(self):
         """Affiche la moyenne mobile des durées des playouts.
             On aimerait qu'elle descende au fur et à mesure que les parties sont mémorisées."""
 
         game_times = []
         b = Board(hash_table=self.hash_table, hash_turn=self.hash_turn)
-        nb_playouts = 3000
+        nb_playouts = 1000
         save_gif = False
         start_time = time.perf_counter()
         res_sum = {
@@ -270,8 +311,9 @@ class TestBoard2Players(unittest.TestCase):
             if p >= nb_playouts:
                 save_gif = True
 
-            winner = b_cop.playout_MAST(played, 0.2, save_gif)
-            # winner = b_cop.playout()
+            winner = b_cop.playout_MAST(played, 0.5,mode=2, save_gif=save_gif)
+            # winner = b_cop.playout(mode=2)
+
             res_sum[winner] += 1
             game_times.append(b_cop.game_time)
             if b_cop.game_time > 600:
@@ -284,6 +326,7 @@ class TestBoard2Players(unittest.TestCase):
                 start_time = time.perf_counter()
 
         print("Victoires RED : ", res_sum[RED])
+        print("Victoires BLUE ", res_sum[BLUE])
 
         with open("game_times_2player.pkl", "wb") as f:
             pickle.dump(game_times, f)

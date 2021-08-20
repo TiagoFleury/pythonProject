@@ -62,7 +62,7 @@ class Move:
         return True
 
     @staticmethod
-    def extend(move_list: list['Move']) -> list[tuple['Move', Union[str, None]]]:
+    def extend(move_list: List['Move']) -> List[Tuple['Move', Union[str, None]]]:
         extended_list = []
         for move in move_list:
             if not move.block:
@@ -102,7 +102,7 @@ class Move:
                  self.dice_score
                  )
         m.block = self.block
-        m.block_placements = copy.deepcopy(self.block_placements)
+        m.block_placements = self.block_placements # Pas besoin de faire une deepcopy, normalement on touchera jamais à cette liste.
         m.chosen_placement = self.chosen_placement
         return m
 
@@ -118,3 +118,5 @@ class Move:
         else:
             return INT2STRING[self.player] + " move : " + str(
                 self.dice_score) + "(" + self.start_node + "," + self.end_node + ")"
+    def __repr__(self):
+        return self.__str__()
