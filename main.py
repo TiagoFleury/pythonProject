@@ -117,31 +117,44 @@ def play_vs_UCT(nb_playouts):
     return figures
 
 
-def UCT_vs_UCT(board, nb_playouts, nb_games):
+def UCT_vs_UCT(board, nb_playouts, nb_games, save_gif=False):
     sum_wins = {RED: 0, BLUE: 0}
     if board.map.nb_players == 3:
         sum_wins[GREEN] = 0
     for g in range(nb_games):
+        figures = []
         b_cop = board.copy()
-        print("Game "+str(g+1),end=" ")
+        print("Game "+str(g+1))
         start_time = time.perf_counter()
+        if save_gif is True and g<=4:
+            figures.append(b_cop.display('names'))
+        print("Game_time : ",end="")
         while not b_cop.over:
+            if b_cop.game_time % 5 == 0:
+                print(f"{b_cop.game_time}-",end="")
             dice_score = random.randint(1, board.map.max_dice)
             chosen_move_red = best_move_UCT(b_cop, dice_score, nb_playouts, mode=1)
             b_cop.play(chosen_move_red)
 
+            if save_gif is True and g<=4:
+                figures.append(b_cop.display('names'))
             if b_cop.over:
                 break
 
             dice_score = random.randint(1, board.map.max_dice)
             chosen_move_blue = best_move_UCT(b_cop, dice_score, nb_playouts, mode=2)
             b_cop.play(chosen_move_blue)
+            if save_gif is True and g<=4:
+                figures.append(b_cop.display('names'))
         end_time = time.perf_counter()
+
         sum_wins[b_cop.winner] += 1
-        print(f"- game_time : {b_cop.game_time} {round((end_time - start_time)/60,0)}min)")
+        print(f"- game_time : {b_cop.game_time} - {round((end_time - start_time)/60,0)}min)")
         print("WINS : ")
         print("RED  -  BLUE  -  GREEN")
         pprint.pprint(sum_wins)
+        if save_gif is True and g <= 4:
+            figs2gif(figures, name=f"2p_{nb_playouts}plyt_game{g+1}.gif")
         board.transposition_table.win_amaf = b_cop.transposition_table.win_amaf
         board.transposition_table.playouts_amaf = b_cop.transposition_table.playouts_amaf
 
@@ -178,7 +191,7 @@ if __name__ == '__main__':
     b1 = Board(*generate_hash_structures("P22-D3-S34-v1"), mapp=Map("P22-D3-S34-v1"))
     b2 = Board(*generate_hash_structures(REF3), mapp=Map("P32-D3-S48-v1"))
 
-    UCT_vs_UCT(b1, 10000, 100)
+    UCT_vs_UCT(b1, 10, 2, save_gif=True)
 
     # figs = RAVE_game(b2, 50, 150, mode=2)
     # figs2gif(figs, "UCT_3j_600plyt_mode2.gif")
