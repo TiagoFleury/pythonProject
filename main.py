@@ -142,8 +142,13 @@ def UCT_vs_UCT(board, nb_playouts, nb_games):
         print("WINS : ")
         print("RED  -  BLUE  -  GREEN")
         pprint.pprint(sum_wins)
+        board.transposition_table.win_amaf = b_cop.transposition_table.win_amaf
+        board.transposition_table.playouts_amaf = b_cop.transposition_table.playouts_amaf
+
         with open(f"sum_wins_{nb_playouts}plyt_{g}games.pkl", "wb") as f:
             pickle.dump(sum_wins, f)
+        with open(f"transposition_table.pkl", "wb") as f:
+            pickle.dump(board.transposition_table, f)
 
 
 
@@ -173,7 +178,7 @@ if __name__ == '__main__':
     b1 = Board(*generate_hash_structures("P22-D3-S34-v1"), mapp=Map("P22-D3-S34-v1"))
     b2 = Board(*generate_hash_structures(REF3), mapp=Map("P32-D3-S48-v1"))
 
-    UCT_vs_UCT(b1, 20, 2)
+    UCT_vs_UCT(b1, 10000, 100)
 
     # figs = RAVE_game(b2, 50, 150, mode=2)
     # figs2gif(figs, "UCT_3j_600plyt_mode2.gif")
