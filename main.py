@@ -188,10 +188,16 @@ def RAVE_game(board: Board, nb_playouts, game_time_limit, mode, save_gif=False):
 if __name__ == '__main__':
     print('Debut')
 
+
     b1 = Board(*generate_hash_structures("P22-D3-S34-v1"), mapp=Map("P22-D3-S34-v1"))
     b2 = Board(*generate_hash_structures(REF3), mapp=Map("P32-D3-S48-v1"))
 
-    UCT_vs_UCT(b1, 10, 2, save_gif=True)
+    with open("big_transposition_table.pkl", "rb") as f:
+        big_table = pickle.load(f)
+
+    b1.transposition_table = big_table
+
+    UCT_vs_UCT(b1, 10000, 2, save_gif=True)
 
     # figs = RAVE_game(b2, 50, 150, mode=2)
     # figs2gif(figs, "UCT_3j_600plyt_mode2.gif")
