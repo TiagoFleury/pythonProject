@@ -24,29 +24,39 @@ class Table:
 
         self.table = {}
         if mapp.reference == "P22-D3-S34-v1":
-            self.win_amaf = [{RED: 0, BLUE: 0} for i in range(mapp.nb_possible_moves)]
+            self.win_MAST = [{RED: 0, BLUE: 0} for i in range(mapp.nb_possible_moves)]
         elif mapp.reference == "P32-D3-S48-v1":
-            self.win_amaf = [{RED: 0, BLUE: 0, GREEN: 0} for i in range(mapp.nb_possible_moves)]
+            self.win_MAST = [{RED: 0, BLUE: 0, GREEN: 0} for i in range(mapp.nb_possible_moves)]
 
-        self.playouts_amaf = [0 for i in range(mapp.nb_possible_moves)]
+        self.playouts_MAST = [0 for i in range(mapp.nb_possible_moves)]
 
-    def add(self, board):
+    def add(self, board, amaf: bool):
         nplayouts = [0.0 for i in range(self.max_moves_for_a_state)]
+        nwins_amaf = None
+        nplayouts_amaf = None
 
         if board.map.reference == "P22-D3-S34-v1":
             nwins = [{RED: 0, BLUE: 0} for i in range(self.max_moves_for_a_state)]
+            if amaf is True: # Si on utilise l'algorithme RAVE ou GRAVE, il faut stocker également les statistiques AMAF
+                nwins_amaf = [{RED: 0, BLUE: 0} for i in range(board.map.nb_possible_moves)]
+                nplayouts_amaf = [0 for i in range(board.map.nb_possible_moves)]
+
         elif board.map.reference == "P32-D3-S48-v1":
             nwins = [{RED: 0, BLUE: 0, GREEN: 0} for i in range(self.max_moves_for_a_state)]
+            if amaf is True:
+                nwins_amaf = [{RED: 0, BLUE: 0, GREEN: 0} for i in range(board.map.nb_possible_moves)]
+                nplayouts_amaf = [0 for i in range(board.map.nb_possible_moves)]
         else:
+            print("Pas de référence de map connue dans Table.add()")
             nwins = None
 
-        self.table[board.hashcode] = [0, nplayouts, nwins]
+        if amaf is True:
+            self.table[board.hashcode] = [0, nplayouts, nwins, nplayouts_amaf, nwins_amaf]
+        else:
+            self.table[board.hashcode] = [0, nplayouts, nwins]
 
     def look(self, board):  # Retourne None, si l'état n'est pas présent dans la table.
         return self.table.get(board.hashcode, None)
 
 
-if __name__ == '__main__':
-    print('bonjour')
-    t = Table()
-    print(t.max_moves_for_a_state)
+

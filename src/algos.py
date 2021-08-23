@@ -4,6 +4,7 @@ import random
 import numpy as np
 
 from src.board import Board
+from typing import List
 
 
 BLOCK = 0
@@ -37,7 +38,7 @@ def flat(board: Board, dice_score: int, nb_playout: int):
             b.play(move)
             played = []
             winner = b.playout_MAST(played, exploration_parameter=0.22)
-            board.update_table(winner, played)
+            board.update_MAST(winner, played)
 
             if winner == move.player:
                 sum_wins += 1
@@ -93,7 +94,7 @@ def UCB(board: Board, dice_score, nb_playouts):  # Ici nb_playouts est le nombre
         # Puis faire un playout et récupérer le résultat
         played = []
         winner = b.playout_MAST(played, exploration_parameter=0.23)
-        board.update_table(winner, played)  # On met à jour la table pour les prochains playouts
+        board.update_MAST(winner, played)  # On met à jour la table pour les prochains playouts
 
         # Et save les stats
         if winner == board.turn:
@@ -111,7 +112,7 @@ def UCB(board: Board, dice_score, nb_playouts):  # Ici nb_playouts est le nombre
 
 
 # Algorithme UCT
-def UCT(board: Board, dice_score, played, mode=1, c=0.4):
+def UCT(board: Board, dice_score, played_moves_codes, mode=1, c=0.4):
     if board.over:  # Si l'état est terminal on renvoie le score.
         return board.winner
 
@@ -126,7 +127,7 @@ def UCT(board: Board, dice_score, played, mode=1, c=0.4):
 
         if len(moves) == 0:
             board.play(None)
-            winner = UCT(board, random.randint(1, board.map.max_dice), played, mode, c)
+            winner = UCT(board, random.randint(1, board.map.max_dice), played_moves_codes, mode, c)
             t[0] += 1  # On a bien vu l'etat mais on a joué aucun coup
             return winner
 
@@ -151,11 +152,11 @@ def UCT(board: Board, dice_score, played, mode=1, c=0.4):
             # On joue un des meilleurs coups selon UCB
             choice = random.choice(best_moves)
             board.play(moves[choice])
-            played.append(moves[choice])
+            played_moves_codes.append(moves[choice].code(board.map))
 
             # Puis on fait un appel récursif pour le nouveau board avec un lancer de dé aléatoire
 
-            winner = UCT(board, random.randint(1, board.map.max_dice), played, mode, c)  # On obtiendra un résultat sur ce board
+            winner = UCT(board, random.randint(1, board.map.max_dice), played_moves_codes, mode, c)  # On obtiendra un résultat sur ce board
 
             # On l'utilise pour mettre à jour les statistiques du meilleur coup.
 
@@ -167,9 +168,9 @@ def UCT(board: Board, dice_score, played, mode=1, c=0.4):
 
     else:  # Si l'etat n'a jamais été visité, on ajoute juste l'état dans la table et on retourne le résultat d'un
         # playout
-        board.new_table_entry()
-        res = board.playout_MAST(played, exploration_parameter=0.5, mode=mode)
-        return res
+        board.new_table_entry(amaf=False)
+        winner = board.playout_MAST(played_moves_codes, exploration_parameter=0.5, mode=mode)
+        return winner
 
 
 # La fonction prend en paramètre un état et un nombre de simulations et qui va renvoyer
@@ -181,9 +182,9 @@ def best_move_UCT(board: Board, dice_score, nb_playouts, mode=1, c=0.4):
     board.transposition_table.table = {}
     for i in range(nb_playouts):  # On fait n simulations
         b1 = board.copy()
-        played = []
-        winner = UCT(b1, dice_score, played, mode, c)  # On obtient un résultat.
-        board.update_table(winner, played)
+        played_moves_codes = []
+        winner = UCT(b1, dice_score, played_moves_codes, mode, c)  # On obtient un résultat.
+        board.update_MAST(winner, played_moves_codes)
 
     # Donc là on a fait n playout en ajoutant à chaque fois un état dans l'abre c'est à dire dans la table
     # de transposition.
@@ -213,19 +214,19 @@ def best_move_UCT(board: Board, dice_score, nb_playouts, mode=1, c=0.4):
     return moves[random.choice(best_moves)]
 
 
-def RAVE(board: Board, dice_score, played, mode):
+def RAVE(board: Board, dice_score, played_moves_codes: List[int], mode):
     if board.over:
         return board.winner
 
     t = board.look_table()
 
-    if t != None:
+    if t is not None:
         best_score = -1
         moves = board.valid_moves(dice_score)
 
         if len(moves) == 0:
             board.play(None)
-            winner = RAVE(board, random.randint(1, board.map.max_dice), played, mode)
+            winner = RAVE(board, random.randint(1, board.map.max_dice), played_moves_codes, mode)
             t[0] += 1
             return winner
 
@@ -237,13 +238,17 @@ def RAVE(board: Board, dice_score, played, mode):
                 score = 100000
                 move_code = moves[m].code(board.map)
 
-                n_amaf = board.transposition_table.playouts_amaf[move_code]
-                win_amaf = board.transposition_table.win_amaf[move_code][player]
+                n_amaf = t[3][move_code]
+                win_amaf = t[4][move_code][player]
+
 
                 if n_amaf > 0:
                     # C'est la formule du beta donnée dans le papier de RAVE
 
-                    beta = n_amaf / (t[1][m] + n_amaf + 1e-5*t[1][m]*n_amaf )
+                    beta = n_amaf / (t[1][m] + n_amaf + 1e-5*t[1][m]*n_amaf)
+                    # print("beta :",beta)
+                    # print("nb de fois qu'il a été joué",t[1][m])
+                    # print("n_amaf :",n_amaf)
 
                     Q = 1 # Valeur par défaut pour t[2] / t[1]
                     if t[1][m] > 0:
@@ -253,50 +258,55 @@ def RAVE(board: Board, dice_score, played, mode):
 
                     score = (1.0 - beta)*Q + beta*Q2
 
+                    # print("score :", score)
+
+                # if score == 100000:
+                #     print("stop")
+
                 if score > best_score:
                     best_score = score
                     best_moves = [m]
                 elif score == best_score:
                     best_moves.append(m)
 
-            # On joue un des meilleurs coups qu'on choisit au hasard.
+            # On joue un des meilleurs coups en choisissant au hasard.
             choice = random.choice(best_moves)
             board.play(moves[choice])
-            played.append(moves[choice])
+            played_moves_codes.append(moves[choice].code(board.map))
 
             # On fait ensuite l'appel récursif comme dans UCT
-            winner = RAVE(board, random.randint(1, board.map.max_dice), played, mode)
+            winner = RAVE(board, random.randint(1, board.map.max_dice), played_moves_codes, mode)
 
             # Et enfin on met à jour les statistiques avec le résultat
 
             t[0] += 1  # Nb de fois qu'on a vu l'état
             t[1][choice] += 1  # Nb de playouts qui commencent par ce coup
             t[2][choice][winner] += 1  # Nb de victoires de RED pour ce coup
+            board.update_AMAF(t, winner, played_moves_codes)  # On met à jour les statistiques AMAF
 
             return winner
 
     else: # Dans le cas ou l'état n'a jamais été vu :
-        board.new_table_entry()
-        winner = board.playout_MAST(played, exploration_parameter=0.5, mode=mode)
+        board.new_table_entry(amaf=True)
+        winner = board.playout_MAST(played_moves_codes, exploration_parameter=0.5, mode=mode)
         return winner
-
-
-
-
-
 
 
 def best_move_RAVE(board, dice_score, nb_playouts, mode=1):
     board.transposition_table.table = {}
-    for i in range(nb_playouts):
-        b1 = board.copy()
-        played = []
-        winner = RAVE(b1, dice_score, played, mode)
-        b1.update_table(winner, played)
-
-    t = board.look_table()
 
     moves = board.valid_moves(dice_score)
+    if len(moves) == 0:
+        print("Pas de coups possibles")
+        return None
+
+    for i in range(nb_playouts):
+        b_cop = board.copy()  # La table de transposition est copiée par référence.
+        played_moves_codes = []
+        winner = RAVE(b_cop, dice_score, played_moves_codes, mode)
+        b_cop.update_MAST(winner, played_moves_codes)
+
+    t = board.look_table()
 
     best_moves = []
     best_value = 0
@@ -309,6 +319,9 @@ def best_move_RAVE(board, dice_score, nb_playouts, mode=1):
 
         if t[1][m] == best_value:
             best_moves.append(m)
-    return moves[random.choice(best_moves)]
+
+    best_move = moves[random.choice(best_moves)]
+    print("Coup choisi : ", best_move)
+    return best_move
 
 

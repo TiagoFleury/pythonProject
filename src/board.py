@@ -20,7 +20,6 @@ GREEN = 3
 EMPTY = 4
 GOAL = -1
 
-
 REF2 = "P22-D3-S34-v1"
 REF3 = "P32-D3-S48-v1"
 
@@ -93,8 +92,8 @@ class Board:
     def look_table(self):
         return self.transposition_table.look(self)
 
-    def new_table_entry(self):
-        self.transposition_table.add(self)
+    def new_table_entry(self, amaf: bool):
+        self.transposition_table.add(self, amaf)
 
     def valid_moves(self, dice_score):
         """
@@ -247,14 +246,10 @@ class Board:
             # print(round(lost_time, 3))
             return self.winner
 
+    def playout_MAST(self, played_moves_codes=None, exploration_parameter=1, mode=1, save_gif=False):
 
-
-
-
-
-    def playout_MAST(self, played_moves=None, exploration_parameter=1, mode=1, save_gif=False):
-
-        if played_moves is None:
+        if played_moves_codes is None:
+            print("Pas de liste transmise pour le playout MAST")
             played_moves = []
 
         figs = []
@@ -283,8 +278,11 @@ class Board:
                         chosen_move = random.choices(chosen_group, policy)[0]
                     else:
                         chosen_move = chosen_group
+                else:
+                    print("Mauvais mode pour playout MAST")
+                    chosen_move = None
 
-                played_moves.append(chosen_move)
+                played_moves_codes.append(chosen_move.code(self.map))
                 self.play(chosen_move)
 
             else:
@@ -316,17 +314,15 @@ class Board:
             valid_moves = self.valid_moves(dice_score)
             grouped_moves = self.get_grouped_moves(valid_moves)
 
-
-            #OK j'en suis là ça a l'air de bien marcher le remplissage de grouped_moves, j'ai testé dans les tests2j
+            # OK j'en suis là ça a l'air de bien marcher le remplissage de grouped_moves, j'ai testé dans les tests2j
             # Maintenant il faut voir comment retourner les policy correctement.
             # Je pense que ce sera pas trop dur
-
 
             if len(valid_moves) != 0:
                 policy = self.get_policy(grouped_moves, exploration_parameter=exploration_parameter)
                 # print("Policy :", policy,"sum:",policy.sum())
 
-                chosen_group = random.choices(grouped_moves[0]+grouped_moves[1:], policy)[0]
+                chosen_group = random.choices(grouped_moves[0] + grouped_moves[1:], policy)[0]
                 if type(chosen_group) is list:
                     policy = self.get_policy(chosen_group)
                     chosen_move = random.choices(chosen_group, policy)[0]
@@ -347,40 +343,38 @@ class Board:
 
         return self.winner
 
-
-
     def get_policy(self, move_list, exploration_parameter=1):
 
-        if type(move_list[0]) is list: # Pour le premier tirage (sans le tirage du placement du Block)
+        if type(move_list[0]) is list:  # Pour le premier tirage (sans le tirage du placement du Block)
             # move_list[0] contient tous les coups qui ne déplacent pas de blocks
-            policy = np.zeros(len(move_list[0]) + len(move_list)-1)
+            policy = np.zeros(len(move_list[0]) + len(move_list) - 1)
             for i in range(len(move_list)):
-                if i == 0: # On considère chaque coup où Block==False individuellement
+                if i == 0:  # On considère chaque coup où Block==False individuellement
                     for j, move in enumerate(move_list[0]):
                         move_code = move.code(self.map)
-                        if self.transposition_table.playouts_amaf[move_code] == 0:
+                        if self.transposition_table.playouts_MAST[move_code] == 0:
                             amaf_victory_rate = 0
                         else:
-                            amaf_victory_rate = (self.transposition_table.win_amaf[move_code][move.player]/
-                                                 self.transposition_table.playouts_amaf[move_code])
+                            amaf_victory_rate = (self.transposition_table.win_MAST[move_code][move.player] /
+                                                 self.transposition_table.playouts_MAST[move_code])
                         policy[j] = math.exp(amaf_victory_rate / exploration_parameter)
-                else: # Et on groupe tous les coups qui déplacent une barricade entre eux en faisant la moyenne de leurs
+                else:  # Et on groupe tous les coups qui déplacent une barricade entre eux en faisant la moyenne de leurs
                     # stats
                     sum = 0
                     amaf_victory_rate = 0
                     for j, move in enumerate(move_list[i]):
                         move_code = move.code(self.map)
-                        if self.transposition_table.playouts_amaf[move_code] == 0:
+                        if self.transposition_table.playouts_MAST[move_code] == 0:
                             amaf_victory_rate = 0
                         else:
-                            amaf_victory_rate = (self.transposition_table.win_amaf[move_code][move.player]/
-                                                 self.transposition_table.playouts_amaf[move_code])
+                            amaf_victory_rate = (self.transposition_table.win_MAST[move_code][move.player] /
+                                                 self.transposition_table.playouts_MAST[move_code])
                         sum += amaf_victory_rate
                     mean = sum / len(move_list[i])
-                    policy[len(move_list[0])+i-1] = math.exp(mean/ exploration_parameter)
+                    policy[len(move_list[0]) + i - 1] = math.exp(mean / exploration_parameter)
             return policy / policy.sum()
 
-        else: # Si c'est simplement une liste de moves qui est fournie, on retourne juste la policy sur ces coups
+        else:  # Si c'est simplement une liste de moves qui est fournie, on retourne juste la policy sur ces coups
 
             policy = np.zeros(len(move_list))
 
@@ -388,11 +382,11 @@ class Board:
                 move_code = move.code(self.map)
                 # On fait la somme des exp des taux de victoire AMAF pour préparer
                 # la politique de tirage des coups
-                if self.transposition_table.playouts_amaf[move_code] == 0:
+                if self.transposition_table.playouts_MAST[move_code] == 0:
                     amaf_victory_rate = 0
                 else:
-                    amaf_victory_rate = self.transposition_table.win_amaf[move_code][move.player]
-                    amaf_victory_rate /= self.transposition_table.playouts_amaf[move_code]
+                    amaf_victory_rate = self.transposition_table.win_MAST[move_code][move.player]
+                    amaf_victory_rate /= self.transposition_table.playouts_MAST[move_code]
 
                 policy[i] = math.exp(amaf_victory_rate / exploration_parameter)
 
@@ -481,11 +475,26 @@ class Board:
         cop.turn = self.turn
         return cop
 
-    def update_table(self, winner, played_moves: List[Move]):
-        for move in played_moves:
-            move_code = move.code(self.map)
-            self.transposition_table.playouts_amaf[move_code] += 1
-            self.transposition_table.win_amaf[move_code][winner] += 1
+    def update_MAST(self, winner, played_moves_codes: List[int]):
+        treated_moves = set()
+        for move_code in played_moves_codes:
+            if move_code in treated_moves:
+                continue
+            self.transposition_table.playouts_MAST[move_code] += 1
+            self.transposition_table.win_MAST[move_code][winner] += 1
+            treated_moves.add(move_code)
+
+    def update_AMAF(self, table_entry: List, winner, played_moves_codes: List[int]):
+        treated_moves = set()
+        for move_code in played_moves_codes:
+            # On va devoir vérifier que le code a pas déjà été compté dans les statistiques
+            if move_code in treated_moves:
+                # Si c'est le cas, on passe au coup suivant directement
+                continue
+            # Sinon, on met à jour les statistiques AMAF de la table.
+            table_entry[3][move_code] += 1  # Nb de fois que le coup a été joué
+            table_entry[4][move_code][winner] += 1  # mise à jour du nb de victoires.
+            treated_moves.add(move_code)
 
     def get_grouped_moves(self, move_list):
         grouped_moves = [[]]

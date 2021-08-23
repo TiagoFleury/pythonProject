@@ -227,7 +227,7 @@ class TestBoard2Players(unittest.TestCase):
         for m in valid_moves :
             print(m,end=" - ")
             code = m.code(self.b.map)
-            print(table.win_amaf[code][m.player], "/", table.playouts_amaf[code],
+            print(table.win_MAST[code][m.player], "/", table.playouts_MAST[code],
                   )  # , round(table.win_amaf[code]/table.playouts_amaf[code],2))
 
         # On va faire 100 playout et voir si on retrouve bien les bonnes stats sur les coups gagnants
@@ -235,11 +235,11 @@ class TestBoard2Players(unittest.TestCase):
         win_move_blue = Move(BLUE, 'e8', 'e9', GOAL, ['e8','e9'],1)
         win_move_red = Move(RED, 'e8', 'e9', GOAL, ['e8','e9'],1)
 
-        self.assertEqual(table.win_amaf[win_move_blue.code(self.b.map)][RED], 0)
-        self.assertEqual(table.win_amaf[win_move_red.code(self.b.map)][BLUE], 0)
+        self.assertEqual(table.win_MAST[win_move_blue.code(self.b.map)][RED], 0)
+        self.assertEqual(table.win_MAST[win_move_red.code(self.b.map)][BLUE], 0)
 
-        self.assertEqual(table.win_amaf[win_move_red.code(self.b.map)][RED], table.playouts_amaf[win_move_red.code(self.b.map)])
-        self.assertEqual(table.win_amaf[win_move_blue.code(self.b.map)][BLUE], table.playouts_amaf[win_move_blue.code(self.b.map)])
+        self.assertEqual(table.win_MAST[win_move_red.code(self.b.map)][RED], table.playouts_MAST[win_move_red.code(self.b.map)])
+        self.assertEqual(table.win_MAST[win_move_blue.code(self.b.map)][BLUE], table.playouts_MAST[win_move_blue.code(self.b.map)])
 
 
     def test_playout_policy(self):
@@ -260,7 +260,7 @@ class TestBoard2Players(unittest.TestCase):
                 best_i = i
             print(i,':',m,end=" ")
             code = m.code(self.b.map)
-            print(table.win_amaf[code][m.player], "/", table.playouts_amaf[code],"-")#, round(table.win_amaf[code]/table.playouts_amaf[code],2))
+            print(table.win_MAST[code][m.player], "/", table.playouts_MAST[code], "-")#, round(table.win_amaf[code]/table.playouts_amaf[code],2))
             print("Proba : "+str(policy[i]))
 
         for i in range(len(valid_moves)):
@@ -272,11 +272,11 @@ class TestBoard2Players(unittest.TestCase):
         win_move_blue = Move(BLUE, 'e8', 'e9', GOAL, ['e8','e9'],1)
         win_move_red = Move(RED, 'e8', 'e9', GOAL, ['e8','e9'],1)
 
-        self.assertEqual(table.win_amaf[win_move_blue.code(self.b.map)][RED], 0)
-        self.assertEqual(table.win_amaf[win_move_red.code(self.b.map)][BLUE], 0)
+        self.assertEqual(table.win_MAST[win_move_blue.code(self.b.map)][RED], 0)
+        self.assertEqual(table.win_MAST[win_move_red.code(self.b.map)][BLUE], 0)
 
-        self.assertEqual(table.win_amaf[win_move_red.code(self.b.map)][RED], table.playouts_amaf[win_move_red.code(self.b.map)])
-        self.assertEqual(table.win_amaf[win_move_blue.code(self.b.map)][BLUE], table.playouts_amaf[win_move_blue.code(self.b.map)])
+        self.assertEqual(table.win_MAST[win_move_red.code(self.b.map)][RED], table.playouts_MAST[win_move_red.code(self.b.map)])
+        self.assertEqual(table.win_MAST[win_move_blue.code(self.b.map)][BLUE], table.playouts_MAST[win_move_blue.code(self.b.map)])
 
 
         # Ensuite ça peut être bien de regarder à quoi ressemblent les tirages sur les derniers coups possibles
@@ -318,7 +318,7 @@ class TestBoard2Players(unittest.TestCase):
             game_times.append(b_cop.game_time)
             if b_cop.game_time > 600:
                 print("big game time :", b_cop.game_time)
-            b.update_table(winner, played)
+            b.update_MAST(winner, played)
 
             if p % 100 == 0:
                 print(f'\n ----- {p} playouts ------ \n')

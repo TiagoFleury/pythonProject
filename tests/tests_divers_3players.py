@@ -73,7 +73,7 @@ class TestBoard3Players(unittest.TestCase):
 
             print(i,':',m,end=" ")
             code = m.code(self.b.map)
-            print(table.win_amaf[code][m.player], "/", table.playouts_amaf[code],"-")#, round(table.win_amaf[code]/table.playouts_amaf[code],2))
+            print(table.win_MAST[code][m.player], "/", table.playouts_MAST[code], "-")#, round(table.win_amaf[code]/table.playouts_amaf[code],2))
             print("Proba : "+str(policy[i]))
             self.assertGreaterEqual(policy[-1], policy[i])
 
@@ -84,17 +84,17 @@ class TestBoard3Players(unittest.TestCase):
 
 
         # Les autres joueurs ne sont pas censés gagner de parties après ce coup
-        self.assertEqual(table.win_amaf[win_move_blue.code(self.b.map)][RED], 0)
-        self.assertEqual(table.win_amaf[win_move_red.code(self.b.map)][BLUE], 0)
-        self.assertEqual(table.win_amaf[win_move_green.code(self.b.map)][BLUE], 0)
+        self.assertEqual(table.win_MAST[win_move_blue.code(self.b.map)][RED], 0)
+        self.assertEqual(table.win_MAST[win_move_red.code(self.b.map)][BLUE], 0)
+        self.assertEqual(table.win_MAST[win_move_green.code(self.b.map)][BLUE], 0)
 
         #Tous ces coups sont gagants donc il doit y avoir autant de wins que de playouts joués à partir de ce coup.
-        self.assertEqual(table.win_amaf[win_move_red.code(self.b.map)][RED],
-                         table.playouts_amaf[win_move_red.code(self.b.map)])
-        self.assertEqual(table.win_amaf[win_move_blue.code(self.b.map)][BLUE],
-                         table.playouts_amaf[win_move_blue.code(self.b.map)])
-        self.assertEqual(table.win_amaf[win_move_green.code(self.b.map)][GREEN],
-                         table.playouts_amaf[win_move_green.code(self.b.map)])
+        self.assertEqual(table.win_MAST[win_move_red.code(self.b.map)][RED],
+                         table.playouts_MAST[win_move_red.code(self.b.map)])
+        self.assertEqual(table.win_MAST[win_move_blue.code(self.b.map)][BLUE],
+                         table.playouts_MAST[win_move_blue.code(self.b.map)])
+        self.assertEqual(table.win_MAST[win_move_green.code(self.b.map)][GREEN],
+                         table.playouts_MAST[win_move_green.code(self.b.map)])
 
     def test_playout_mm(self):
         """
