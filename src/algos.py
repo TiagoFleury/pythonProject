@@ -180,6 +180,15 @@ def UCT(board: Board, dice_score, played_moves_codes, mode=1, c=0.4):
 def best_move_UCT(board: Board, dice_score, nb_playouts, mode=1, c=0.4):
 
     board.transposition_table.table = {}
+    # Les coups sont toujours retournés dans le même ordre pour un état de plateau donné.
+    moves = board.valid_moves(dice_score)
+
+    if len(moves) == 0:
+        print("Pas de coups possibles")
+        return None
+    elif len(moves) == 1:
+        return moves[0]
+
     for i in range(nb_playouts):  # On fait n simulations
         b1 = board.copy()
         played_moves_codes = []
@@ -192,9 +201,6 @@ def best_move_UCT(board: Board, dice_score, nb_playouts, mode=1, c=0.4):
     # Il faut maintenant récupérer le coup le plus simulé
 
     t = board.look_table()  # On récup la racine de l'arbre dans la table
-
-    # Les coups sont toujours retournés dans le même ordre pour un état de plateau donné.
-    moves = board.valid_moves(dice_score)
 
     # Et on va prendre le coup le plus simulé c'est à dire celui qui a le nombre de playouts
     # le plus grand !
@@ -299,6 +305,8 @@ def best_move_RAVE(board, dice_score, nb_playouts, mode=1):
     if len(moves) == 0:
         print("Pas de coups possibles")
         return None
+    elif len(moves) == 1:
+        return moves[0]
 
     for i in range(nb_playouts):
         b_cop = board.copy()  # La table de transposition est copiée par référence.
@@ -325,3 +333,125 @@ def best_move_RAVE(board, dice_score, nb_playouts, mode=1):
     return best_move
 
 
+def GRAVE(board: Board, dice_score, played_moves_codes: List[int], tref, treshold, mode):
+    if board.over:
+        return board.winner
+
+    t = board.look_table()
+
+    if t is not None:
+
+        tr = tref
+        if t[0] > treshold:
+            # Si dans l'entrée il y a déjà eu assez de playouts, alors on l'utilisera pour les stats et on le passera
+            # dans l'appel récursif.
+            tr = t
+        # Sinon, on utilisera tref
+
+        # Ensuite c'est la même chose que pour RAVE sauf qu'au lieu d'utiliser les statistiques de t,
+        # on utilise les statistiques de tr
+
+        best_score = -1
+        moves = board.valid_moves(dice_score)
+
+        if len(moves) == 0:
+            board.play(None)
+            winner = GRAVE(board, random.randint(1, board.map.max_dice), played_moves_codes, tr, treshold, mode)
+            t[0] += 1
+            return winner
+
+        else:
+            player = moves[0].player
+            best_moves = []
+
+            for m in range(len(moves)):
+                score = 100000
+                move_code = moves[m].code(board.map)
+
+                n_amaf_ref = tr[3][move_code]
+                win_amaf_ref = t[4][move_code][player]
+
+                if n_amaf_ref > 0:
+                    # C'est la formule du beta donnée dans le papier de RAVE
+
+                    beta = n_amaf_ref / (t[1][m] + n_amaf_ref + 1e-5*t[1][m]*n_amaf_ref)
+                    # print("beta :",beta)
+                    # print("nb de fois qu'il a été joué",t[1][m])
+                    # print("n_amaf :",n_amaf)
+
+                    Q = 1 # Valeur par défaut pour t[2] / t[1]
+                    if t[1][m] > 0:
+                        Q = t[2][m][player] / t[1][m] # Le taux de victoire "réel"
+
+                    Q2 = win_amaf_ref / n_amaf_ref
+
+                    score = (1.0 - beta)*Q + beta*Q2
+
+                    # print("score :", score)
+
+                # if score == 100000:
+                #     print("stop")
+
+                if score > best_score:
+                    best_score = score
+                    best_moves = [m]
+                elif score == best_score:
+                    best_moves.append(m)
+
+            # On joue un des meilleurs coups en choisissant au hasard.
+            choice = random.choice(best_moves)
+            board.play(moves[choice])
+            played_moves_codes.append(moves[choice].code(board.map))
+
+            # On fait ensuite l'appel récursif comme dans UCT
+            winner = RAVE(board, random.randint(1, board.map.max_dice), played_moves_codes, mode)
+
+            # Et enfin on met à jour les statistiques avec le résultat
+
+            t[0] += 1  # Nb de fois qu'on a vu l'état
+            t[1][choice] += 1  # Nb de playouts qui commencent par ce coup
+            t[2][choice][winner] += 1  # Nb de victoires de RED pour ce coup
+            board.update_AMAF(t, winner, played_moves_codes)  # On met à jour les statistiques AMAF
+
+            return winner
+
+    else: # Dans le cas ou l'état n'a jamais été vu :
+        board.new_table_entry(amaf=True)
+        winner = board.playout_MAST(played_moves_codes, exploration_parameter=0.5, mode=mode)
+        return winner
+
+def best_move_GRAVE(board, dice_score, nb_playouts, treshold=50, mode=1):
+    board.transposition_table.table = {}
+    moves = board.valid_moves(dice_score)
+    if len(moves) == 0:
+        print("Pas de coups possibles")
+        return None
+    elif len(moves) == 1:
+        return moves[0]
+
+    board.new_table_entry(amaf=True)
+    t = board.look_table()
+
+    for i in range(nb_playouts):
+        b_cop = board.copy()  # La table de transposition est copiée par référence.
+        played_moves_codes = []
+        winner = GRAVE(b_cop, dice_score, played_moves_codes, t, treshold, mode)
+        b_cop.update_MAST(winner, played_moves_codes)
+
+    t = board.look_table()
+
+    best_moves = []
+    best_value = 0
+
+    for m in range(len(moves)):
+        print('Pour', moves[m], ':', t[1][m], 'playout')
+        if t[1][m] > best_value:
+            best_value = t[1][m]
+            best_moves = [m]
+
+        if t[1][m] == best_value:
+            best_moves.append(m)
+
+    best_move = moves[random.choice(best_moves)]
+    print("Coup choisi : ", best_move)
+    return best_move
