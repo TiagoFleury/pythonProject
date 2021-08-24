@@ -135,7 +135,8 @@ def UCT_vs_UCT(board, nb_playouts, nb_games, save_gif=False):
             dice_score = random.randint(1, board.map.max_dice)
             chosen_move_red = best_move_UCT(b_cop, dice_score, nb_playouts, mode=1)
             b_cop.play(chosen_move_red)
-
+            if b_cop.game_time % 5 == 0:
+                print(f"{b_cop.game_time}-",end="")
             if save_gif is True and g<=4:
                 figures.append(b_cop.display('names'))
             if b_cop.over:
