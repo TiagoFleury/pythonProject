@@ -6,7 +6,6 @@ import numpy as np
 from src.board import Board
 from typing import List
 
-
 BLOCK = 0
 RED = 1
 BLUE = 2
@@ -80,9 +79,8 @@ def UCB(board: Board, dice_score, nb_playouts):  # Ici nb_playouts est le nombre
             if score > best_score:
                 best_score = score
                 best_moves = [m]
-            if score == best_score: # On construit une liste de tous les meilleurs coups
+            if score == best_score:  # On construit une liste de tous les meilleurs coups
                 best_moves.append(m)
-
 
         # Maintenant il faut jouer un des meilleurs coups
 
@@ -112,7 +110,7 @@ def UCB(board: Board, dice_score, nb_playouts):  # Ici nb_playouts est le nombre
 
 
 # Algorithme UCT
-def UCT(board: Board, dice_score, played_moves_codes, mode=1, c=0.4):
+def UCT(board: Board, dice_score, played_moves_codes, mode=1, c=0.4, mast_param=0.5):
     if board.over:  # Si l'état est terminal on renvoie le score.
         return board.winner
 
@@ -156,7 +154,8 @@ def UCT(board: Board, dice_score, played_moves_codes, mode=1, c=0.4):
 
             # Puis on fait un appel récursif pour le nouveau board avec un lancer de dé aléatoire
 
-            winner = UCT(board, random.randint(1, board.map.max_dice), played_moves_codes, mode, c)  # On obtiendra un résultat sur ce board
+            winner = UCT(board, random.randint(1, board.map.max_dice), played_moves_codes, mode,
+                         c)  # On obtiendra un résultat sur ce board
 
             # On l'utilise pour mettre à jour les statistiques du meilleur coup.
 
@@ -169,7 +168,7 @@ def UCT(board: Board, dice_score, played_moves_codes, mode=1, c=0.4):
     else:  # Si l'etat n'a jamais été visité, on ajoute juste l'état dans la table et on retourne le résultat d'un
         # playout
         board.new_table_entry(amaf=False)
-        winner = board.playout_MAST(played_moves_codes, exploration_parameter=0.5, mode=mode)
+        winner = board.playout_MAST(played_moves_codes, exploration_parameter=mast_param, mode=mode)
         return winner
 
 
@@ -177,8 +176,111 @@ def UCT(board: Board, dice_score, played_moves_codes, mode=1, c=0.4):
 # le meilleur coup calculé grâce à UCT
 
 
-def best_move_UCT(board: Board, dice_score, nb_playouts, mode=1, c=0.4):
+def best_move_UCT(board: Board, dice_score, nb_playouts, mode=1, c=0.4, mast_param=0.5):
+    board.transposition_table.table = {}
+    # Les coups sont toujours retournés dans le même ordre pour un état de plateau donné.
+    moves = board.valid_moves(dice_score)
 
+    if len(moves) == 0:
+        print("Pas de coups possibles")
+        return None
+    elif len(moves) == 1:
+        return moves[0]
+
+    for i in range(nb_playouts):  # On fait n simulations
+        b1 = board.copy()
+        played_moves_codes = []
+        winner = UCT(b1, dice_score, played_moves_codes, mode, c, mast_param)  # On obtient un résultat.
+        board.update_MAST(winner, played_moves_codes)
+
+    # Donc là on a fait n playout en ajoutant à chaque fois un état dans l'abre c'est à dire dans la table
+    # de transposition.
+
+    # Il faut maintenant récupérer le coup le plus simulé
+
+    t = board.look_table()  # On récup la racine de l'arbre dans la table
+
+    # Et on va prendre le coup le plus simulé c'est à dire celui qui a le nombre de playouts
+    # le plus grand !
+
+    best_moves = []
+    best_value = 0
+
+    for m in range(len(moves)):
+        # print('Pour', moves[m], ':', t[1][m], 'playout')
+        if t[1][m] > best_value:
+            best_value = t[1][m]
+            best_moves = [m]
+
+        if t[1][m] == best_value:
+            best_moves.append(m)
+    # print("La table contient :", len(board.transposition_table.table))
+    return moves[random.choice(best_moves)]
+
+
+def UCT_pas_MAST(board: Board, dice_score, played_moves_codes, mode=1, c=0.4):
+    if board.over:  # Si l'état est terminal on renvoie le score.
+        return board.winner
+
+    # sinon on récupère l'entrée dans la table de transposition.
+    t = board.look_table()
+
+    if t != None:  # Si différent de None alors l'entrée est déjà présente. On va faire UCB dessus
+        best_score = -1
+        # print(f"Etat déja vu {t[0]} fois")
+        # On récupère la liste des coups légaux
+        moves = board.valid_moves(dice_score)
+
+        if len(moves) == 0:
+            board.play(None)
+            winner = UCT(board, random.randint(1, board.map.max_dice), played_moves_codes, mode, c)
+            t[0] += 1  # On a bien vu l'etat mais on a joué aucun coup
+            return winner
+
+        else:
+            player = moves[0].player
+            best_moves = []
+            # On va choisir le move qui maximise UCB, sauf s'il y a des coups non essayés.
+            for m in range(len(moves)):
+                score = 1000000.0
+
+                if t[1][m] > 0:  # Si le nombre de fois que le coup a été joué est supérieur à 0
+                    Q = t[2][m][player] / t[1][m]  # Calcul du nombre de victoires moyenne du joueur actuel
+
+                    score = Q + c * math.sqrt(math.log(t[0]) / t[1][m])  # Formule UCB
+
+                if score > best_score:
+                    best_score = score
+                    best_moves = [m]
+                elif score == best_score:
+                    best_moves.append(m)
+
+            # On joue un des meilleurs coups selon UCB
+            choice = random.choice(best_moves)
+            board.play(moves[choice])
+            played_moves_codes.append(moves[choice].code(board.map))
+
+            # Puis on fait un appel récursif pour le nouveau board avec un lancer de dé aléatoire
+
+            winner = UCT(board, random.randint(1, board.map.max_dice), played_moves_codes, mode,
+                         c)  # On obtiendra un résultat sur ce board
+
+            # On l'utilise pour mettre à jour les statistiques du meilleur coup.
+
+            t[0] += 1  # Nb de fois qu'on a vu l'état
+            t[1][choice] += 1  # Nb de playouts qui commencent par ce coup
+            t[2][choice][winner] += 1  # Nb de victoires de RED pour ce coup
+            # Et on le remonte aux étapes récursives précédentes.
+            return winner
+
+    else:  # Si l'etat n'a jamais été visité, on ajoute juste l'état dans la table et on retourne le résultat d'un
+        # playout
+        board.new_table_entry(amaf=False)
+        winner = board.playout(mode=mode)
+        return winner
+
+
+def best_move_UCT_pas_MAST(board: Board, dice_score, nb_playouts, mode=1, c=0.4):
     board.transposition_table.table = {}
     # Les coups sont toujours retournés dans le même ordre pour un état de plateau donné.
     moves = board.valid_moves(dice_score)
@@ -193,7 +295,6 @@ def best_move_UCT(board: Board, dice_score, nb_playouts, mode=1, c=0.4):
         b1 = board.copy()
         played_moves_codes = []
         winner = UCT(b1, dice_score, played_moves_codes, mode, c)  # On obtient un résultat.
-        board.update_MAST(winner, played_moves_codes)
 
     # Donc là on a fait n playout en ajoutant à chaque fois un état dans l'abre c'est à dire dans la table
     # de transposition.
@@ -236,7 +337,7 @@ def RAVE(board: Board, dice_score, played_moves_codes: List[int], mode):
             t[0] += 1
             return winner
 
-        else :
+        else:
             player = moves[0].player
             best_moves = []
 
@@ -247,22 +348,21 @@ def RAVE(board: Board, dice_score, played_moves_codes: List[int], mode):
                 n_amaf = t[3][move_code]
                 win_amaf = t[4][move_code][player]
 
-
                 if n_amaf > 0:
                     # C'est la formule du beta donnée dans le papier de RAVE
 
-                    beta = n_amaf / (t[1][m] + n_amaf + 1e-5*t[1][m]*n_amaf)
+                    beta = n_amaf / (t[1][m] + n_amaf + 1e-5 * t[1][m] * n_amaf)
                     # print("beta :",beta)
                     # print("nb de fois qu'il a été joué",t[1][m])
                     # print("n_amaf :",n_amaf)
 
-                    Q = 1 # Valeur par défaut pour t[2] / t[1]
+                    Q = 1  # Valeur par défaut pour t[2] / t[1]
                     if t[1][m] > 0:
-                        Q = t[2][m][player] / t[1][m] # Le taux de victoire "réel"
+                        Q = t[2][m][player] / t[1][m]  # Le taux de victoire "réel"
 
                     Q2 = win_amaf / n_amaf
 
-                    score = (1.0 - beta)*Q + beta*Q2
+                    score = (1.0 - beta) * Q + beta * Q2
 
                     # print("score :", score)
 
@@ -292,7 +392,7 @@ def RAVE(board: Board, dice_score, played_moves_codes: List[int], mode):
 
             return winner
 
-    else: # Dans le cas ou l'état n'a jamais été vu :
+    else:  # Dans le cas ou l'état n'a jamais été vu :
         board.new_table_entry(amaf=True)
         winner = board.playout_MAST(played_moves_codes, exploration_parameter=0.5, mode=mode)
         return winner
@@ -374,18 +474,18 @@ def GRAVE(board: Board, dice_score, played_moves_codes: List[int], tref, treshol
                 if n_amaf_ref > 0:
                     # C'est la formule du beta donnée dans le papier de RAVE
 
-                    beta = n_amaf_ref / (t[1][m] + n_amaf_ref + 1e-5*t[1][m]*n_amaf_ref)
+                    beta = n_amaf_ref / (t[1][m] + n_amaf_ref + 1e-5 * t[1][m] * n_amaf_ref)
                     # print("beta :",beta)
                     # print("nb de fois qu'il a été joué",t[1][m])
                     # print("n_amaf :",n_amaf)
 
-                    Q = 1 # Valeur par défaut pour t[2] / t[1]
+                    Q = 1  # Valeur par défaut pour t[2] / t[1]
                     if t[1][m] > 0:
-                        Q = t[2][m][player] / t[1][m] # Le taux de victoire "réel"
+                        Q = t[2][m][player] / t[1][m]  # Le taux de victoire "réel"
 
                     Q2 = win_amaf_ref / n_amaf_ref
 
-                    score = (1.0 - beta)*Q + beta*Q2
+                    score = (1.0 - beta) * Q + beta * Q2
 
                     # print("score :", score)
 
@@ -415,10 +515,11 @@ def GRAVE(board: Board, dice_score, played_moves_codes: List[int], tref, treshol
 
             return winner
 
-    else: # Dans le cas ou l'état n'a jamais été vu :
+    else:  # Dans le cas ou l'état n'a jamais été vu :
         board.new_table_entry(amaf=True)
         winner = board.playout_MAST(played_moves_codes, exploration_parameter=0.5, mode=mode)
         return winner
+
 
 def best_move_GRAVE(board, dice_score, nb_playouts, treshold=50, mode=1):
     board.transposition_table.table = {}

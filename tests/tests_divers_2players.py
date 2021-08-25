@@ -293,13 +293,12 @@ class TestBoard2Players(unittest.TestCase):
 
         game_times = []
         b = Board(hash_table=self.hash_table, hash_turn=self.hash_turn)
-        nb_playouts = 1000
+        nb_playouts = 2000
         save_gif = False
         start_time = time.perf_counter()
         res_sum = {
             RED: 0,
-            BLUE: 0,
-            GREEN: 0
+            BLUE: 0
         }
 
         for p in range(nb_playouts):
@@ -311,8 +310,8 @@ class TestBoard2Players(unittest.TestCase):
             if p >= nb_playouts:
                 save_gif = True
 
-            winner = b_cop.playout_MAST(played, 0.5,mode=2, save_gif=save_gif)
-            # winner = b_cop.playout(mode=2)
+            # winner = b_cop.playout_MAST(played, 0.3, mode=1, save_gif=save_gif)
+            winner = b_cop.playout(mode=1)
 
             res_sum[winner] += 1
             game_times.append(b_cop.game_time)

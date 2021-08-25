@@ -296,52 +296,6 @@ class Board:
 
         return self.winner
 
-    def playout_MAST_2(self, played_moves=None, exploration_parameter=1, save_gif=False):
-        """
-        Version de playout MAST où on tire dans un premier temps le déplacement du pion et dans un second temps
-        le déplacement de la barricade s'il y en a une.
-        """
-        if played_moves is None:
-            played_moves = []
-
-        figs = []
-        if save_gif is True:
-            figs = [self.display('names')]
-
-        while not self.over:
-
-            dice_score = random.randint(1, self.map.max_dice)
-            valid_moves = self.valid_moves(dice_score)
-            grouped_moves = self.get_grouped_moves(valid_moves)
-
-            # OK j'en suis là ça a l'air de bien marcher le remplissage de grouped_moves, j'ai testé dans les tests2j
-            # Maintenant il faut voir comment retourner les policy correctement.
-            # Je pense que ce sera pas trop dur
-
-            if len(valid_moves) != 0:
-                policy = self.get_policy(grouped_moves, exploration_parameter=exploration_parameter)
-                # print("Policy :", policy,"sum:",policy.sum())
-
-                chosen_group = random.choices(grouped_moves[0] + grouped_moves[1:], policy)[0]
-                if type(chosen_group) is list:
-                    policy = self.get_policy(chosen_group)
-                    chosen_move = random.choices(chosen_group, policy)[0]
-                else:
-                    chosen_move = chosen_group
-
-                played_moves.append(chosen_move)
-                self.play(chosen_move)
-
-            else:
-                self.play(None)
-
-            if save_gif is True:
-                figs.append(self.display('names'))
-
-        if save_gif is True:
-            figs2gif(figs, "new_playout_gt" + str(self.game_time) + ".gif")
-
-        return self.winner
 
     def get_policy(self, move_list, exploration_parameter=1):
 
@@ -393,7 +347,7 @@ class Board:
             # On crée ensuite le vecteur qui servira de politique pour tirer le coup dans le playout
             return policy / policy.sum()
 
-    def display(self, display_mode=None, figsize=(6, 6), infos=True):
+    def display(self, display_mode=None, figsize=(6,6), infos=True):
         """
         Fonction pour afficher le board.
         :param display_mode 'names' pour avoir les coordonnées des cases, 'content' pour les valeurs contenues
