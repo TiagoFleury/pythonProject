@@ -32,8 +32,7 @@ class Board:
 
     def __init__(self, hash_table=None, hash_turn=None, mapp=Map("P22-D3-S34-v1")):
 
-        self.hashcode = 0  # On aura un hashcode unique pour chaque position de jeu possible (voir section hachage de
-        # Zobrist)
+        self.hashcode = 0
 
         if mapp.reference == "P22-D3-S34-v1":
             self.piece_pools = {RED: ['a0', 2], BLUE: ['i0', 2]}
