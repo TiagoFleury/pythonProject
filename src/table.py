@@ -27,6 +27,7 @@ class Table:
             self.win_MAST = [{RED: 0, BLUE: 0} for i in range(mapp.nb_possible_moves)]
         elif mapp.reference == "P32-D3-S48-v1":
             self.win_MAST = [{RED: 0, BLUE: 0, GREEN: 0} for i in range(mapp.nb_possible_moves)]
+            # self.win_MAST = [[0,0,0,0] for i in range(mapp.nb_possible_moves)]
 
         self.playouts_MAST = [0 for i in range(mapp.nb_possible_moves)]
 

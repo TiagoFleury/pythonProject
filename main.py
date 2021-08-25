@@ -1,4 +1,6 @@
+import os
 import pickle
+import sys
 
 import numpy as np
 import random
@@ -321,9 +323,9 @@ def RAVE_vs_GRAVE(board, nb_playouts, nb_games, treshold, save_gif=False):
         print("RED  -  BLUE")
         pprint.pprint(sum_wins)
         if save_gif is True:
-            figs2gif(figures, name=f"RAVE-UCT-UCT_{nb_playouts}plyt_game{g + 1}.gif")
+            figs2gif(figures, name=f"RAVE-UCT-UCT_{nb_playouts}plyt_game{g+1}_pid{os.getpid()}.gif")
 
-        with open(f"sum_wins_{nb_playouts}plyt_RAVExGRAVE_{g}games.pkl", "wb") as f:
+        with open(f"sum_wins_{nb_playouts}plyt_RAVExGRAVE_{g+1}games_pid{os.getpid()}.pkl", "wb") as f:
             pickle.dump(sum_wins, f)
 
 
@@ -338,5 +340,7 @@ if __name__ == '__main__':
     #
     # b1.transposition_table = big_table
 
-    RAVE_vs_GRAVE(b1, 10, 15, treshold=30, save_gif=True)
+    # RAVE_vs_GRAVE(b1, 10, 15, treshold=30, save_gif=True)
+    plot_fig(b1.display('names'))
+
     print("Fin")
