@@ -63,17 +63,6 @@ class Move:
 
         return True
 
-    @staticmethod
-    def extend(move_list: List['Move']) -> List[Tuple['Move', Union[str, None]]]:
-        extended_list = []
-        for move in move_list:
-            if not move.block:
-                extended_list.append((move, None))
-            else:
-                for pos in move.block_placements:
-                    extended_list.append((move, pos))
-        return extended_list
-
     def code(self, mapp: Map):
         # Il faut associer à chaque coup possible un code pour pouvoir stocker les statistiques AMAF
 

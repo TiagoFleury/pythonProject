@@ -192,6 +192,60 @@ def RAVE_game(board: Board, nb_playouts, game_time_limit, mode, save_gif=False):
     if save_gif is True:
         return figures
 
+def RAVE_vs_UCT(board: Board, nb_playouts, nb_games, save_gif=False):
+    sum_wins = {RED: 0, BLUE: 0}
+
+    red_MAST_wins = copy.deepcopy(board.transposition_table.win_MAST)
+    red_MAST_playouts = copy.deepcopy(board.transposition_table.playouts_MAST)
+
+    blue_MAST_wins = copy.deepcopy(board.transposition_table.win_MAST)
+    blue_MAST_playouts = copy.deepcopy(board.transposition_table.playouts_MAST)
+
+    for g in range(nb_games):
+        figures = []
+        b_cop = board.copy()
+        print("Game " + str(g + 1))
+        start_time = time.perf_counter()
+        if save_gif is True and g <= 4:
+            figures.append(b_cop.display('names'))
+        print("Game_time : ", end="")
+        while not b_cop.over:
+            if b_cop.game_time % 5 == 0:
+                print(f"{b_cop.game_time}-", end="")
+
+            dice_score = random.randint(1, board.map.max_dice)
+            b_cop.transposition_table.playouts_MAST = red_MAST_playouts
+            b_cop.transposition_table.win_MAST = red_MAST_wins
+            chosen_move_red = best_move_RAVE(b_cop, dice_score, nb_playouts, mode=1, mast_param=0.2)
+            b_cop.play(chosen_move_red)
+            if b_cop.game_time % 5 == 0:
+                print(f"{b_cop.game_time}-", end="")
+            if save_gif is True and g <= 4:
+                figures.append(b_cop.display('names'))
+            if b_cop.over:
+                break
+
+            dice_score = random.randint(1, board.map.max_dice)
+            b_cop.transposition_table.playouts_MAST = blue_MAST_playouts
+            b_cop.transposition_table.win_MAST = blue_MAST_wins
+            chosen_move_blue = best_move_UCT(b_cop, dice_score, nb_playouts, mode=1, c=0.4, mast_param=0.2)
+            b_cop.play(chosen_move_blue)
+            if save_gif is True and g <= 4:
+                figures.append(b_cop.display('names'))
+        end_time = time.perf_counter()
+
+        sum_wins[b_cop.winner] += 1
+        print(f"- game_time : {b_cop.game_time} - ({round((end_time - start_time) / 60, 0)}min)")
+        print("WINS : ")
+        print("RED  -  BLUE")
+        pprint.pprint(sum_wins)
+        if save_gif is True and g <= 4:
+            figs2gif(figures, name=f"RAVExUCT_{nb_playouts}plyt_game{g + 1}_pid{os.getpid()}.gif")
+
+        with open(f"sum_wins_{nb_playouts}plyt_{g}games_pid{os.getpid()}.pkl", "wb") as f:
+            pickle.dump(sum_wins, f)
+        # with open(f"transposition_table.pkl", "wb") as f:
+        #     pickle.dump(board.transposition_table, f)
 
 def RAVE_vs_UCT_vs_UCT(board, nb_playouts, nb_games, save_gif=False):
     sum_wins = {RED: 0, BLUE: 0}
@@ -273,7 +327,7 @@ def GRAVE_game(board: Board, nb_playouts, game_time_limit, treshold, mode, save_
     if save_gif is True:
         return figures
 
-def GRAVE_vs_GRAVE(board: Board, nb_playouts, game_time_limit, treshold1, treshold2, mode, save_gif=False):
+def GRAVE_vs_GRAVE(board: Board, nb_playouts, nb_games, treshold1, treshold2, mode, save_gif=False):
     sum_wins = {RED: 0, BLUE: 0}
     red_MAST_wins = copy.deepcopy(board.transposition_table.win_MAST)
     red_MAST_playouts = copy.deepcopy(board.transposition_table.playouts_MAST)
@@ -322,7 +376,7 @@ def GRAVE_vs_GRAVE(board: Board, nb_playouts, game_time_limit, treshold1, tresho
         print("RED  -  BLUE")
         pprint.pprint(sum_wins)
         if save_gif is True:
-            figs2gif(figures, name=f"RAVE-UCT-UCT_{nb_playouts}plyt_game{g + 1}_pid{os.getpid()}.gif")
+            figs2gif(figures, name=f"GRAVE{treshold1}xGRAVE{treshold2}_{nb_playouts}plyt_game{g + 1}_pid{os.getpid()}.gif")
 
         with open(f"sum_wins_{nb_playouts}plyt_GRAVE{treshold1}xGRAVE{treshold2}_{g+1}games_pid{os.getpid()}.pkl", "wb") as f:
             pickle.dump(sum_wins, f)
