@@ -91,7 +91,7 @@ def UCB(board: Board, dice_score, nb_playouts):  # Ici nb_playouts est le nombre
 
         # Puis faire un playout et récupérer le résultat
         played = []
-        winner = b.playout_MAST(played, exploration_parameter=0.23)
+        winner = b.playout_MAST(played, exploration_parameter=0.2)
         board.update_MAST(winner, played)  # On met à jour la table pour les prochains playouts
 
         # Et save les stats
@@ -321,7 +321,7 @@ def best_move_UCT_pas_MAST(board: Board, dice_score, nb_playouts, mode=1, c=0.4)
     return moves[random.choice(best_moves)]
 
 
-def RAVE(board: Board, dice_score, played_moves_codes: List[int], mode, mast_param):
+def RAVE(board: Board, dice_score, played_moves_codes: List[int], mode, mast_param, beta_param=1e-5):
     if board.over:
         return board.winner
 
@@ -333,7 +333,7 @@ def RAVE(board: Board, dice_score, played_moves_codes: List[int], mode, mast_par
 
         if len(moves) == 0:
             board.play(None)
-            winner = RAVE(board, random.randint(1, board.map.max_dice), played_moves_codes, mode, mast_param)
+            winner = RAVE(board, random.randint(1, board.map.max_dice), played_moves_codes, mode, mast_param, beta_param)
             t[0] += 1
             return winner
 
@@ -351,7 +351,7 @@ def RAVE(board: Board, dice_score, played_moves_codes: List[int], mode, mast_par
                 if n_amaf > 0:
                     # C'est la formule du beta donnée dans le papier de RAVE
 
-                    beta = n_amaf / (t[1][m] + n_amaf + 1e-5 * t[1][m] * n_amaf)
+                    beta = n_amaf / (t[1][m] + n_amaf + beta_param * t[1][m] * n_amaf)
                     # print("beta :",beta)
                     # print("nb de fois qu'il a été joué",t[1][m])
                     # print("n_amaf :",n_amaf)
@@ -381,7 +381,7 @@ def RAVE(board: Board, dice_score, played_moves_codes: List[int], mode, mast_par
             played_moves_codes.append(moves[choice].code(board.map))
 
             # On fait ensuite l'appel récursif comme dans UCT
-            winner = RAVE(board, random.randint(1, board.map.max_dice), played_moves_codes, mode, mast_param)
+            winner = RAVE(board, random.randint(1, board.map.max_dice), played_moves_codes, mode, mast_param, beta_param)
 
             # Et enfin on met à jour les statistiques avec le résultat
 
@@ -398,7 +398,7 @@ def RAVE(board: Board, dice_score, played_moves_codes: List[int], mode, mast_par
         return winner
 
 
-def best_move_RAVE(board, dice_score, nb_playouts, mode, mast_param):
+def best_move_RAVE(board, dice_score, nb_playouts, mode, mast_param, beta_param=1e-5):
     board.transposition_table.table = {}
 
     moves = board.valid_moves(dice_score)
@@ -411,7 +411,7 @@ def best_move_RAVE(board, dice_score, nb_playouts, mode, mast_param):
     for i in range(nb_playouts):
         b_cop = board.copy()  # La table de transposition est copiée par référence.
         played_moves_codes = []
-        winner = RAVE(b_cop, dice_score, played_moves_codes, mode, mast_param)
+        winner = RAVE(b_cop, dice_score, played_moves_codes, mode, mast_param, beta_param)
         b_cop.update_MAST(winner, played_moves_codes)
 
     t = board.look_table()
@@ -433,7 +433,7 @@ def best_move_RAVE(board, dice_score, nb_playouts, mode, mast_param):
     return best_move
 
 
-def GRAVE(board: Board, dice_score, played_moves_codes: List[int], tref, treshold, mode, mast_param):
+def GRAVE(board: Board, dice_score, played_moves_codes: List[int], tref, treshold, mode, mast_param, beta_param):
     if board.over:
         return board.winner
 
@@ -456,7 +456,7 @@ def GRAVE(board: Board, dice_score, played_moves_codes: List[int], tref, treshol
 
         if len(moves) == 0:
             board.play(None)
-            winner = GRAVE(board, random.randint(1, board.map.max_dice), played_moves_codes, tr, treshold, mode, mast_param)
+            winner = GRAVE(board, random.randint(1, board.map.max_dice), played_moves_codes, tr, treshold, mode, mast_param, beta_param)
             t[0] += 1
             return winner
 
@@ -496,7 +496,7 @@ def GRAVE(board: Board, dice_score, played_moves_codes: List[int], tref, treshol
             played_moves_codes.append(moves[choice].code(board.map))
 
             # On fait ensuite l'appel récursif comme dans UCT
-            winner = RAVE(board, random.randint(1, board.map.max_dice), played_moves_codes, mode, mast_param)
+            winner = GRAVE(board, random.randint(1, board.map.max_dice), played_moves_codes, tr, treshold, mode, mast_param, beta_param)
 
             # Et enfin on met à jour les statistiques avec le résultat
 
@@ -513,7 +513,7 @@ def GRAVE(board: Board, dice_score, played_moves_codes: List[int], tref, treshol
         return winner
 
 
-def best_move_GRAVE(board, dice_score, nb_playouts, treshold, mode, mast_param):
+def best_move_GRAVE(board, dice_score, nb_playouts, treshold, mode, mast_param, beta_param):
     board.transposition_table.table = {}
     moves = board.valid_moves(dice_score)
     if len(moves) == 0:
@@ -528,7 +528,7 @@ def best_move_GRAVE(board, dice_score, nb_playouts, treshold, mode, mast_param):
     for i in range(nb_playouts):
         b_cop = board.copy()  # La table de transposition est copiée par référence.
         played_moves_codes = []
-        winner = GRAVE(b_cop, dice_score, played_moves_codes, t, treshold, mode, mast_param)
+        winner = GRAVE(b_cop, dice_score, played_moves_codes, t, treshold, mode, mast_param, beta_param)
         b_cop.update_MAST(winner, played_moves_codes)
 
     t = board.look_table()
