@@ -504,18 +504,28 @@ def RAVE_vs_GRAVE(board, nb_playouts, nb_games, treshold, save_gif=False):
 if __name__ == '__main__':
     print('Debut')
 
-    b1 = Board(*generate_hash_structures("P22-D3-S34-v1"), mapp=Map("P22-D3-S34-v1"))
-    b2 = Board(*generate_hash_structures(REF3), mapp=Map("P32-D3-S48-v1"))
+    nb_playouts = 8000
 
-    # with open("big_transposition_table.pkl", "rb") as f:
-    #     big_table = pickle.load(f)
+    s3 = Board.get_situation_3(*generate_hash_structures(REF3))
+
+    plot_fig(s3.display('names'))
+    # for i in range(10):
+    #     s1 = Board.get_situation_1(*generate_hash_structures(REF3))
+    #     s1.turn = BLUE
+    #     s2 = Board.get_situation_2(*generate_hash_structures(REF3))
+    #     s2.turn = BLUE
+    #     s3 = Board.get_situation_3(*generate_hash_structures(REF3))
+    #     s3.turn = GREEN
     #
-    # b1.transposition_table = big_table
-
-    # RAVE_vs_GRAVE(b1, 10, 15, treshold=30, save_gif=True)
-    # plot_fig(b1.display('names'))
-
-    b3 = Board.get_situation_3(*generate_hash_structures(REF3))
-    plot_fig(b3.display('names'))
+    #     best_move_s1 = best_move_RAVE(s1, 1, nb_playouts, mode=2, mast_param=0.2, beta_param=1e-3)
+    #     s1.transposition_table.table = {}
+    #     best_move_s2 = best_move_RAVE(s2, 1, nb_playouts, mode=2, mast_param=0.2, beta_param=1e-3)
+    #     s2.transposition_table.table = {}
+    #     best_move_s3 = best_move_RAVE(s3, 2, nb_playouts, mode=2, mast_param=0.2, beta_param=1e-3)
+    #     s3.transposition_table.table = {}
+    #
+    #     print(i,": Best move s1 :", best_move_s1)
+    #     print(i,": Best move s2 :", best_move_s2)
+    #     print(i,": Best move s3 :", best_move_s3)
 
     print("Fin")
