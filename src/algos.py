@@ -456,7 +456,8 @@ def GRAVE(board: Board, dice_score, played_moves_codes: List[int], tref, treshol
 
         if len(moves) == 0:
             board.play(None)
-            winner = GRAVE(board, random.randint(1, board.map.max_dice), played_moves_codes, tr, treshold, mode, mast_param, beta_param)
+            winner = GRAVE(board, random.randint(1, board.map.max_dice), played_moves_codes,
+                           tr, treshold, mode, mast_param, beta_param)
             t[0] += 1
             return winner
 
@@ -474,7 +475,7 @@ def GRAVE(board: Board, dice_score, played_moves_codes: List[int], tref, treshol
                 if n_amaf_ref > 0:
                     # C'est la formule du beta donnée dans le papier de RAVE
 
-                    beta = n_amaf_ref / (t[1][m] + n_amaf_ref + 1e-5 * t[1][m] * n_amaf_ref)
+                    beta = n_amaf_ref / (t[1][m] + n_amaf_ref + beta_param * t[1][m] * n_amaf_ref)
 
                     Q = 1  # Valeur par défaut pour t[2] / t[1]
                     if t[1][m] > 0:
@@ -496,7 +497,8 @@ def GRAVE(board: Board, dice_score, played_moves_codes: List[int], tref, treshol
             played_moves_codes.append(moves[choice].code(board.map))
 
             # On fait ensuite l'appel récursif comme dans UCT
-            winner = GRAVE(board, random.randint(1, board.map.max_dice), played_moves_codes, tr, treshold, mode, mast_param, beta_param)
+            winner = GRAVE(board, random.randint(1, board.map.max_dice),played_moves_codes,
+                           tr, treshold, mode, mast_param, beta_param)
 
             # Et enfin on met à jour les statistiques avec le résultat
 

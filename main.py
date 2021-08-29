@@ -203,7 +203,7 @@ def RAVE_vs_RAVE(board: Board, nb_playouts, nb_games, beta1, beta2, save_gif=Fal
     for g in range(nb_games):
         figures = []
         b_cop = board.copy()
-        print("Game " + str(g + 1) + f" GRAVE{beta1}_vs_GRAVE{beta2}")
+        print("Game " + str(g + 1) + f" RAVE{beta1}_vs_RAVE{beta2}")
         start_time = time.perf_counter()
         if save_gif is True:
             figures.append(b_cop.display('names'))
@@ -513,6 +513,9 @@ if __name__ == '__main__':
     # b1.transposition_table = big_table
 
     # RAVE_vs_GRAVE(b1, 10, 15, treshold=30, save_gif=True)
-    plot_fig(b1.display('names'))
+    # plot_fig(b1.display('names'))
+
+    b3 = Board.get_situation_3(*generate_hash_structures(REF3))
+    plot_fig(b3.display('names'))
 
     print("Fin")
