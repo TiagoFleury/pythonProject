@@ -504,7 +504,7 @@ def RAVE_vs_GRAVE(board, nb_playouts, nb_games, treshold, save_gif=False):
 if __name__ == '__main__':
     print('Debut')
 
-    nb_playouts = 8000
+    nb_playouts = 100
 
     s3 = Board.get_situation_3(*generate_hash_structures(REF3))
 

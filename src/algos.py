@@ -420,7 +420,7 @@ def best_move_RAVE(board, dice_score, nb_playouts, mode, mast_param, beta_param=
     best_value = 0
 
     for m in range(len(moves)):
-        print('Pour', moves[m], ':', t[1][m], 'playout')
+        # print('Pour', moves[m], ':', t[1][m], 'playout')
         if t[1][m] > best_value:
             best_value = t[1][m]
             best_moves = [m]
@@ -429,7 +429,7 @@ def best_move_RAVE(board, dice_score, nb_playouts, mode, mast_param, beta_param=
             best_moves.append(m)
 
     best_move = moves[random.choice(best_moves)]
-    print("Coup choisi : ", best_move)
+    # print("Coup choisi : ", best_move)
     return best_move
 
 
@@ -539,7 +539,7 @@ def best_move_GRAVE(board, dice_score, nb_playouts, treshold, mode, mast_param, 
     best_value = 0
 
     for m in range(len(moves)):
-        print('Pour', moves[m], ':', t[1][m], 'playout')
+        # print('Pour', moves[m], ':', t[1][m], 'playout')
         if t[1][m] > best_value:
             best_value = t[1][m]
             best_moves = [m]
@@ -548,5 +548,5 @@ def best_move_GRAVE(board, dice_score, nb_playouts, treshold, mode, mast_param, 
             best_moves.append(m)
 
     best_move = moves[random.choice(best_moves)]
-    print("Coup choisi : ", best_move)
+    # print("Coup choisi : ", best_move)
     return best_move
