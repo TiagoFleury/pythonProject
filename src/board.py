@@ -487,6 +487,8 @@ class Board:
         b.change_content('b6', BLUE)
         b.piece_pools[BLUE][1] -= 1
 
+        b.turn = BLUE
+
         return b
 
     @staticmethod
@@ -514,10 +516,45 @@ class Board:
         b.change_content('b6', BLUE)
         b.piece_pools[BLUE][1] -= 1
 
+        b.turn = BLUE
+
         return b
 
     @staticmethod
     def get_situation_3(hash_table, hash_turn):
+        b = Board(hash_table, hash_turn, mapp=Map("P32-D3-S48-v1"))
+        b.change_content('c5', RED)
+        b.change_content('d5', RED)
+        b.piece_pools[RED][1] -= 2
+
+        b.change_content('d8', BLOCK)
+        b.change_content('h7', BLOCK)
+        b.change_content('h8', BLOCK)
+        b.change_content('h6', BLOCK)
+        b.change_content('b7', BLOCK)
+        b.change_content('g6', BLOCK)
+
+        b.change_content('b3', EMPTY)
+        b.change_content('h3', EMPTY)
+        b.change_content('d3', EMPTY)
+        b.change_content('f3', EMPTY)
+        b.change_content('e5', EMPTY)
+        b.change_content('e6', EMPTY)
+        b.change_content('a0', EMPTY)
+        b.change_content('i0', EMPTY)
+
+        b.change_content('d6', BLUE)
+        b.piece_pools[BLUE][1] -= 1
+
+        b.change_content('c6', GREEN)
+        b.piece_pools[GREEN][1] -= 1
+
+        b.turn = BLUE
+
+        return b
+
+    @staticmethod
+    def get_situation_4(hash_table, hash_turn):
         b = Board(hash_table, hash_turn, mapp=Map("P32-D3-S48-v1"))
         b.change_content('b6', RED)
         b.change_content('b7', RED)

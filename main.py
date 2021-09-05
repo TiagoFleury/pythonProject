@@ -509,23 +509,21 @@ if __name__ == '__main__':
     s3 = Board.get_situation_3(*generate_hash_structures(REF3))
 
     plot_fig(s3.display('names'))
-    # for i in range(10):
-    #     s1 = Board.get_situation_1(*generate_hash_structures(REF3))
-    #     s1.turn = BLUE
-    #     s2 = Board.get_situation_2(*generate_hash_structures(REF3))
-    #     s2.turn = BLUE
-    #     s3 = Board.get_situation_3(*generate_hash_structures(REF3))
-    #     s3.turn = GREEN
-    #
-    #     best_move_s1 = best_move_RAVE(s1, 1, nb_playouts, mode=2, mast_param=0.2, beta_param=1e-3)
-    #     s1.transposition_table.table = {}
-    #     best_move_s2 = best_move_RAVE(s2, 1, nb_playouts, mode=2, mast_param=0.2, beta_param=1e-3)
-    #     s2.transposition_table.table = {}
-    #     best_move_s3 = best_move_RAVE(s3, 2, nb_playouts, mode=2, mast_param=0.2, beta_param=1e-3)
-    #     s3.transposition_table.table = {}
-    #
-    #     print(i,": Best move s1 :", best_move_s1)
-    #     print(i,": Best move s2 :", best_move_s2)
-    #     print(i,": Best move s3 :", best_move_s3)
+
+    for i in range(10):
+        s1 = Board.get_situation_1(*generate_hash_structures(REF3))
+        s2 = Board.get_situation_2(*generate_hash_structures(REF3))
+        s3 = Board.get_situation_3(*generate_hash_structures(REF3))
+
+        best_move_s1 = best_move_RAVE(s1, 1, nb_playouts, mode=2, mast_param=0.2, beta_param=1e-3)
+        s1.transposition_table.table = {}
+        best_move_s2 = best_move_RAVE(s2, 1, nb_playouts, mode=2, mast_param=0.2, beta_param=1e-3)
+        s2.transposition_table.table = {}
+        best_move_s3 = best_move_RAVE(s3, 2, nb_playouts, mode=2, mast_param=0.2, beta_param=1e-3)
+        s3.transposition_table.table = {}
+
+        print(i,": Best move s1 :", best_move_s1)
+        print(i,": Best move s2 :", best_move_s2)
+        print(i,": Best move s3 :", best_move_s3)
 
     print("Fin")
