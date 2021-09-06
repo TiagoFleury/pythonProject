@@ -506,24 +506,28 @@ if __name__ == '__main__':
 
     nb_playouts = 100
 
-    s3 = Board.get_situation_3(*generate_hash_structures(REF3))
+    s3 = Board.get_situation_4bis(*generate_hash_structures(REF3))
 
     plot_fig(s3.display('names'))
 
+    res = []
+
     for i in range(10):
-        s1 = Board.get_situation_1(*generate_hash_structures(REF3))
-        s2 = Board.get_situation_2(*generate_hash_structures(REF3))
-        s3 = Board.get_situation_3(*generate_hash_structures(REF3))
+        s4 = Board.get_situation_4(*generate_hash_structures(REF3))
+        s4bis = Board.get_situation_4bis(*generate_hash_structures(REF3))
 
-        best_move_s1 = best_move_RAVE(s1, 1, nb_playouts, mode=2, mast_param=0.2, beta_param=1e-3)
-        s1.transposition_table.table = {}
-        best_move_s2 = best_move_RAVE(s2, 1, nb_playouts, mode=2, mast_param=0.2, beta_param=1e-3)
-        s2.transposition_table.table = {}
-        best_move_s3 = best_move_RAVE(s3, 2, nb_playouts, mode=2, mast_param=0.2, beta_param=1e-3)
-        s3.transposition_table.table = {}
+        best_move_s4 = best_move_RAVE(s4, 1, nb_playouts, mode=2, mast_param=0.2, beta_param=1e-3)
+        s4.transposition_table.table = {}
+        print(i,": Best move s1 :", best_move_s4)
 
-        print(i,": Best move s1 :", best_move_s1)
-        print(i,": Best move s2 :", best_move_s2)
-        print(i,": Best move s3 :", best_move_s3)
+        best_move_s4bis = best_move_RAVE(s4bis, 1, nb_playouts, mode=2, mast_param=0.2, beta_param=1e-3)
+        s4bis.transposition_table.table = {}
+
+        print(i,": Best move s2 :", best_move_s4bis)
+
+        res.append( (best_move_s4, best_move_s4bis) )
+        with open("result.pkl", "wb") as f:
+            pickle.dump(res, f)
+
 
     print("Fin")
