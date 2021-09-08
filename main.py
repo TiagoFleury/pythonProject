@@ -503,31 +503,15 @@ def RAVE_vs_GRAVE(board, nb_playouts, nb_games, treshold, save_gif=False):
 
 if __name__ == '__main__':
     print('Debut')
+    # On va essayer d'optimiser un peu le temps des playouts
 
-    nb_playouts = 100
+    b = Board(*generate_hash_structures(REF3), Map(REF3))
 
-    s3 = Board.get_situation_4bis(*generate_hash_structures(REF3))
+    t1 = time.perf_counter()
+    for i in range(50):
+        b_cop = b.copy()
+        b_cop.playout(mode=2)
+    t2 = time.perf_counter()
 
-    plot_fig(s3.display('names'))
-
-    res = []
-
-    # for i in range(10):
-    #     s4 = Board.get_situation_4(*generate_hash_structures(REF3))
-    #     s4bis = Board.get_situation_4bis(*generate_hash_structures(REF3))
-    #
-    #     best_move_s4 = best_move_RAVE(s4, 1, nb_playouts, mode=2, mast_param=0.2, beta_param=1e-3)
-    #     s4.transposition_table.table = {}
-    #     print(i,": Best move s1 :", best_move_s4)
-    #
-    #     best_move_s4bis = best_move_RAVE(s4bis, 1, nb_playouts, mode=2, mast_param=0.2, beta_param=1e-3)
-    #     s4bis.transposition_table.table = {}
-    #
-    #     print(i,": Best move s2 :", best_move_s4bis)
-    #
-    #     res.append( (best_move_s4, best_move_s4bis) )
-    #     with open("result.pkl", "wb") as f:
-    #         pickle.dump(res, f)
-
-
+    print("temps :", round(t2-t1, 2))
     print("Fin")
